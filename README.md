@@ -11,13 +11,12 @@
 基于 zircon 并提供 Linux 兼容性的操作系统内核。
 
 ## 原版README
-
   Reimplement `Zircon` microkernel in safe Rust as a userspace program!
 
-- zCore设计架构概述
-- 支持bare-metal模式的Zircon & Linux
-- 支持libos模式的Zircon & Linux
-- 支持的图形应用程序等更多指导请查看[原版README文档](README-arch.md)。
+  * zCore设计架构概述
+  * 支持bare-metal模式的Zircon & Linux 
+  * 支持libos模式的Zircon & Linux
+  * 支持的图形应用程序等更多指导请查看[原版README文档](README-arch.md)。
 
 ## 启动内核
 
@@ -39,7 +38,6 @@
   - [Qemu/virt](#qemuvirt)
   - [全志/哪吒](#全志哪吒)
   - [赛昉/星光](#赛昉星光)
-  - [晶视/cr1825](#晶视cr1825)
 
 ## 项目构建
 
@@ -128,7 +126,7 @@ cargo zircon-init
 反汇并保存编指定架构的内核。默认保存到 `target/zcore.asm`。
 
 ```bash
-cargo asm -m virt-riscv64 -o z.asm
+cargo asm --arch riscv64 --output riscv64.asm
 ```
 
 #### **bin**
@@ -136,7 +134,7 @@ cargo asm -m virt-riscv64 -o z.asm
 生成内核 raw 镜像到指定位置。默认输出到 `target/{arch}/release/zcore.bin`。
 
 ```bash
-cargo bin -m virt-riscv64 -o z.bin
+cargo bin --arch riscv64 --output zcore.bin
 ```
 
 #### **qemu**
@@ -236,7 +234,7 @@ cargo linux-libos --args "/bin/busybox ls"
 使用以下命令构造系统镜像：
 
 ```bash
-cargo bin -m nezha -o z.bin
+cargo bin --arch riscv64 --features "linux board-d1" --output z.bin
 ```
 
 然后使用 [rustsbi-d1](https://github.com/rustsbi/rustsbi-d1) 将镜像部署到 Flash 或 DRAM。
@@ -248,23 +246,12 @@ cargo bin -m nezha -o z.bin
 使用以下命令构造系统镜像：
 
 ```bash
-cargo bin -m visionfive -o z.bin
+cargo bin --arch riscv64 --features "linux board-visionfive" --output z.bin
 ```
 
 然后根据[此文档](docs/README-visionfive.md)的详细说明通过 u-boot 网络启动系统。
 
-### 晶视/cr1825
-
-使用以下命令构造系统镜像：
-
-```bash
-cargo bin -m cr1825 -o z.bin
-```
-
-然后通过 u-boot 网络启动系统。
-
 ## 其他
-
 - [An English README](docs/README_EN.md)
 - [开发者注意事项（草案）](docs/for-developers.md)
 - [构建系统更新日志](xtask/CHANGELOG.md)

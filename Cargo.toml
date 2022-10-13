@@ -8,7 +8,6 @@ members = [
     "linux-syscall",
     "loader",
     "zCore",
-    "z-config",
     "xtask",
 ]
 default-members = ["xtask"]

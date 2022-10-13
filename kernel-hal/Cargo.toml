@@ -32,6 +32,7 @@ no-pci = ["zcore-drivers/no-pci"]
 allwinner-drivers = ["zcore-drivers/allwinner"]
 # Enable fu740 drivers
 fu740-drivers = ["zcore-drivers/fu740"]
+board-c910light = []
 
 [dependencies]
 log = "0.4"
