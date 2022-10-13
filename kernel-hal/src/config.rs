@@ -8,4 +8,5 @@ pub(crate) static KCONFIG: InitOnce<KernelConfig> = InitOnce::new_with_default(K
 #[cfg(not(feature = "libos"))]
 pub(crate) static KCONFIG: InitOnce<KernelConfig> = InitOnce::new();
 
-pub const MAX_CORE_NUM: usize = 8;
+#[cfg(not(feature = "libos"))]
+pub const MAX_CORE_NUM: usize = 5;

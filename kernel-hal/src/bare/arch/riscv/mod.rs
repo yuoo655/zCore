@@ -55,6 +55,8 @@ pub fn primary_init_early() {
 pub fn primary_init() {
     vm::init();
     drivers::init().unwrap();
+    // We should set first time interrupt before run into first user program
+    // timer::init();
 }
 
 pub fn timer_init() {

@@ -6,7 +6,6 @@ use core::slice;
 use lock::Mutex;
 use riscv::{asm, register::satp};
 
-use crate::addr::{align_down, align_up};
 use crate::utils::page_table::{GenericPTE, PageTableImpl, PageTableLevel3};
 use crate::{mem::phys_to_virt, MMUFlags, PhysAddr, VirtAddr, KCONFIG};
 
@@ -70,12 +69,19 @@ fn init_kernel_page_table() -> PagingResult<PageTable> {
             MMUFlags::READ | MMUFlags::WRITE,
         )?;
     }
-    // device tree
+    cfg_if! {
+        if #[cfg(any(feature = "board-fu740", feature = "board-c910light"))] {
+    extern "C" {
+        fn boot_stack();
+        fn boot_stack_top();
+    }
     map_range(
-        phys_to_virt(align_down(KCONFIG.dtb_paddr)),
-        phys_to_virt(align_up(KCONFIG.dtb_paddr + KCONFIG.dtb_size)),
-        MMUFlags::READ,
-    )?;
+        boot_stack as usize,
+        boot_stack_top as usize,
+        MMUFlags::READ | MMUFlags::WRITE,
+        )?;
+        }
+    }
     // physical frames
     for r in crate::mem::free_pmem_regions() {
         map_range(

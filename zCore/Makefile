@@ -5,7 +5,6 @@ PLATFORM ?= qemu
 MODE ?= release
 LOG ?= warn
 LINUX ?=
-MOCK ?=
 LIBOS ?=
 TEST ?=
 GRAPHIC ?=
@@ -102,16 +101,14 @@ else
     else ifeq ($(PLATFORM), fu740)
 	SMP := 5
 	features += board-fu740
+    else ifeq ($(PLATFORM), c910light)
+	features += board-c910light link-user-img
     endif
   else ifeq ($(ARCH), aarch64)
   	ifeq ($(PLATFORM), raspi4b)
   	  features += link-user-img
   	endif
   endif
-endif
-
-ifeq ($(MOCK), 1)
-  features += mock-disk
 endif
 
 ifeq ($(TEST), 1)
@@ -168,7 +165,7 @@ else ifeq ($(ARCH), riscv64)
   qemu_opts += \
 		-machine virt \
 		-bios default \
-		-m 1G \
+		-m 512M \
 		-no-reboot \
 		-serial mon:stdio \
 		-serial file:/tmp/serial.out \
@@ -270,7 +267,6 @@ ifeq ($(PLATFORM), d1)
 else
 	$(qemu) $(qemu_opts)
 endif
-
 
 ifeq ($(ARCH), x86_64)
   gdb := gdb

@@ -5,5 +5,4 @@
 pub struct KernelConfig {
     pub phys_to_virt_offset: usize,
     pub dtb_paddr: usize,
-    pub dtb_size: usize,
 }
