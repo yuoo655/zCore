@@ -249,6 +249,7 @@ ifeq ($(PLATFORM), fu740)
 	gzip -9 -cvf $(build_path)/zcore.bin > ./zcore.bin.gz
 	mkimage -f ../prebuilt/firmware/riscv/fu740_fdt.its ./zcore-fu740.itb
 	@echo 'Build zcore-fu740.itb FIT-uImage done'
+	@cp ./zcore-fu740.itb /srv/tftp/
 else ifeq ($(PLATFORM), c910light)
 	mkimage -A riscv -O linux -C none -T kernel -a 0x200000 -e 0x200000 \
 		-n "zCore for c910" \

@@ -57,7 +57,9 @@ use super::{read, write};
 const PCI_BASE: usize = 0xbbe00000;
 
 #[cfg(target_arch = "riscv64")]
-const PCI_BASE: usize = 0x30000000;
+//const PCI_BASE: usize = 0x60070000;
+const PCI_BASE: usize = 0xe00000000;
+
 #[cfg(target_arch = "riscv64")]
 const E1000_BASE: usize = 0x40000000;
 // riscv64 Qemu
@@ -67,6 +69,7 @@ const PCI_ACCESS: CSpaceAccessMethod = CSpaceAccessMethod::IO;
 #[cfg(not(target_arch = "x86_64"))]
 const PCI_ACCESS: CSpaceAccessMethod = CSpaceAccessMethod::MemoryMapped(PCI_BASE as *mut u8);
 
+/*
 #[cfg(any(target_arch = "mips", target_arch = "riscv64"))]
 impl PortOps for PortOpsImpl {
     unsafe fn read8(&self, port: u16) -> u8 {
@@ -86,6 +89,42 @@ impl PortOps for PortOpsImpl {
     }
     unsafe fn write32(&self, port: u32, val: u32) {
         write(phys_to_virt(PCI_BASE) + port as usize, val);
+    }
+}
+*/
+
+use super::pcie_dw_sifive::{pcie_dw_read_config, pcie_dw_write_config, PCI_SIZE};
+
+impl PortOps for PortOpsImpl {
+    unsafe fn read8(&self, port: u16) -> u8 {
+        error!("unimplemented read8!");
+        0
+    }
+    unsafe fn read16(&self, port: u16) -> u16 {
+        error!("unimplemented read16!");
+        0
+    }
+    unsafe fn read32(&self, port: u32) -> u32 {
+        let mut valuep: u64 = 0;
+        let bdf = (port >> 12) << 8; //注，这里会清0低位
+        let offset = port & 0xffc;
+        pcie_dw_read_config(bdf, offset, &mut valuep, PCI_SIZE::PCI32).unwrap();
+
+        valuep as u32
+    }
+
+    unsafe fn write8(&self, port: u16, val: u8) {
+        error!("unimplemented write8!");
+    }
+    unsafe fn write16(&self, port: u16, val: u16) {
+        error!("unimplemented write16!");
+    }
+    unsafe fn write32(&self, port: u32, val: u32) {
+        write(phys_to_virt(PCI_BASE) + port as usize, val);
+
+        let bdf = (port >> 12) << 8; //注，这里会清0低位
+        let offset = port & 0xffc;
+        pcie_dw_write_config(bdf, offset, val as u64, PCI_SIZE::PCI32).unwrap();
     }
 }
 
@@ -279,11 +318,15 @@ pub fn detach_driver(_loc: &Location) -> bool {
 
 pub fn init(mapper: Option<Arc<dyn IoMapper>>) -> DeviceResult<Vec<Device>> {
     let mapper_driver = if let Some(m) = mapper {
-        m.query_or_map(PCI_BASE, PAGE_SIZE * 256 * 32 * 8);
+        m.query_or_map(PCI_BASE, 256 * 256 * 32 * 8);
+        m.query_or_map(0x60070000, 256 * 256 * 32 * 8);
         Some(m)
     } else {
         None
     };
+
+    unsafe { probe_function(&PortOpsImpl, struct Location {6, 0, 0}, PCI_ACCESS) }
+    loop{}
 
     let mut dev_list = Vec::new();
     let pci_iter = unsafe { scan_bus(&PortOpsImpl, PCI_ACCESS) };
@@ -314,6 +357,7 @@ pub fn init(mapper: Option<Arc<dyn IoMapper>>) -> DeviceResult<Vec<Device>> {
     info!("---------");
     info!("");
 
+    loop{}
     Ok(dev_list)
 }
 
