@@ -325,8 +325,7 @@ pub fn init(mapper: Option<Arc<dyn IoMapper>>) -> DeviceResult<Vec<Device>> {
         None
     };
 
-    unsafe { probe_function(&PortOpsImpl, struct Location {6, 0, 0}, PCI_ACCESS) }
-    loop{}
+    unsafe { probe_function(&PortOpsImpl, Location {bus: 6, device: 0, function: 0}, PCI_ACCESS).unwrap(); }
 
     let mut dev_list = Vec::new();
     let pci_iter = unsafe { scan_bus(&PortOpsImpl, PCI_ACCESS) };
