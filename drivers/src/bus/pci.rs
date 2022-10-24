@@ -108,7 +108,7 @@ impl PortOps for PortOpsImpl {
         let mut valuep: u64 = 0;
         let bdf = (port >> 12) << 8; //注，这里会清0低位
         let offset = port & 0xffc;
-        pcie_dw_read_config(bdf, offset, &mut valuep, PCI_SIZE::PCI32).unwrap();
+        pcie_dw_read_config(bdf, offset, &mut valuep, PCI_SIZE::pci32).unwrap();
 
         valuep as u32
     }
@@ -120,11 +120,9 @@ impl PortOps for PortOpsImpl {
         error!("unimplemented write16!");
     }
     unsafe fn write32(&self, port: u32, val: u32) {
-        write(phys_to_virt(PCI_BASE) + port as usize, val);
-
         let bdf = (port >> 12) << 8; //注，这里会清0低位
         let offset = port & 0xffc;
-        pcie_dw_write_config(bdf, offset, val as u64, PCI_SIZE::PCI32).unwrap();
+        pcie_dw_write_config(bdf, offset, val as u64, PCI_SIZE::pci32).unwrap();
     }
 }
 
@@ -276,6 +274,15 @@ pub fn init_driver(dev: &PCIDevice, mapper: &Option<Arc<dyn IoMapper>>) -> Devic
                 return Err(DeviceError::NotSupported);
             }
         }
+        (0x144d, 0xa808) => {
+            if let Some(BAR::Memory(addr, _len, _, _)) = dev.bars[0] {
+                info!(
+                    "Found Mass storage controller dev {:?}, addr: {:x?}",
+                    dev, addr
+                );
+                return Err(DeviceError::NotSupported);
+            }
+        }
         _ => {}
     }
     if dev.id.class == 0x01 && dev.id.subclass == 0x06 {
@@ -325,7 +332,12 @@ pub fn init(mapper: Option<Arc<dyn IoMapper>>) -> DeviceResult<Vec<Device>> {
         None
     };
 
-    unsafe { probe_function(&PortOpsImpl, Location {bus: 6, device: 0, function: 0}, PCI_ACCESS).unwrap(); }
+    /*
+    unsafe { probe_function(&PortOpsImpl, Location {bus: 0, device: 0, function: 0}, PCI_ACCESS); }
+    unsafe { probe_function(&PortOpsImpl, Location {bus: 6, device: 0, function: 0}, PCI_ACCESS); }
+    debug!("OK!");
+    loop{}
+    */
 
     let mut dev_list = Vec::new();
     let pci_iter = unsafe { scan_bus(&PortOpsImpl, PCI_ACCESS) };
@@ -356,7 +368,6 @@ pub fn init(mapper: Option<Arc<dyn IoMapper>>) -> DeviceResult<Vec<Device>> {
     info!("---------");
     info!("");
 
-    loop{}
     Ok(dev_list)
 }
 

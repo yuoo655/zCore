@@ -28,6 +28,9 @@ make build MODE=release LINUX=1 ARCH=riscv64 PLATFORM=fu740
 setenv ipaddr <IP>
 setenv serverip <Server IP>
 
+# PCI init
+pci enum
+
 # 通过tftp协议加载系统镜像
 tftp 0xa0000000 zcore-fu740.itb
 

@@ -100,25 +100,26 @@ fn udelay(n: u32) {
     }
 }
 
+#[derive(Debug)]
 pub enum PCI_SIZE {
-    PCI8,
-    PCI16,
-    PCI32,
+    pci8,
+    pci16,
+    pci32,
 }
 
 fn pci_get_ff(size: PCI_SIZE) -> u32 {
     match size {
-        PCI8  => 0xff,
-        PCI16 => 0xffff,
-        PCI32 => 0xffffffff,
+        PCI_SIZE::pci8  => 0xff,
+        PCI_SIZE::pci16 => 0xffff,
+        PCI_SIZE::pci32 => 0xffffffff,
     }
 }
 
 fn pci_conv_32_to_size(value: u64, offset: u32, size: PCI_SIZE) -> u64 {
     match size {
-        PCI8  => (value >> ((offset & 3) * 8)) & 0xff,
-        PCI16 => (value >> ((offset & 2) * 8)) & 0xffff,
-        PCI32 => value,
+        PCI_SIZE::pci8  => (value >> ((offset & 3) * 8)) & 0xff,
+        PCI_SIZE::pci16 => (value >> ((offset & 2) * 8)) & 0xffff,
+        PCI_SIZE::pci32 => value,
     }
 }
 
@@ -126,15 +127,15 @@ fn pci_conv_size_to_32(old: u64, value: u64, offset: u32, size: PCI_SIZE) -> u64
     let mut off_mask = 0;
     let mut val_mask = 0;
     match size {
-        PCI8 => {
+        PCI_SIZE::pci8 => {
             off_mask = 3;
             val_mask = 0xff;
         },
-        PCI16 => {
+        PCI_SIZE::pci16 => {
             off_mask = 2;
             val_mask = 0xffff;
         },
-        PCI32 => {
+        PCI_SIZE::pci32 => {
             return value;
         },
     }
@@ -148,12 +149,13 @@ fn pci_conv_size_to_32(old: u64, value: u64, offset: u32, size: PCI_SIZE) -> u64
 fn dw_pcie_writel_ob_unroll(index: u32, reg: u32, val: u32) {
     // PCIE_GET_ATU_OUTB_UNR_REG_OFFSET
     let offset = index << 9;
-    writev((ATU_BASE + (offset + reg) as u64) as *mut u32, val);
+    writev((ATU_BASE + (offset + reg) as u64), val);
+    trace!("writev value: {:#x}", val);
 }
 
 fn dw_pcie_readl_ob_unroll(index: u32, reg: u32) -> u32 {
     let offset = index << 9;
-    readv((ATU_BASE + (offset + reg) as u64) as *const u32)
+    readv(ATU_BASE + (offset + reg) as u64)
 }
 
 // pcie_dw_prog_outbound_atu_unroll() - Configure ATU for outbound accesses
@@ -179,7 +181,7 @@ fn pcie_dw_prog_outbound_atu_unroll(index: u32, atu_type: u32, cpu_addr: u64, pc
 
     for _ in 0..LINK_WAIT_MAX_IATU_RETRIES {
         let val = dw_pcie_readl_ob_unroll(index, PCIE_ATU_UNR_REGION_CTRL2);
-        debug!("dw_pcie_readl_ob_unroll PCIE_ATU_UNR_REGION_CTRL2: {:#x}", val);
+        trace!("dw_pcie_readl_ob_unroll PCIE_ATU_UNR_REGION_CTRL2: {:#x}", val);
         if (val & PCIE_ATU_ENABLE) != 0 {
             return Ok(0);
         }
@@ -196,6 +198,7 @@ pub fn set_cfg_address(bdf: u32, offset: u32) -> Option<u64> {
     let bus = pci_bus(bdf) - FIRST_BUSNO;
     let mut va_address: u64 = 0;
     if bus == 0 {
+        trace!("first busno: {}", bus);
         va_address = DBI_BASE;
     } else {
         let atu_type = if bus == 1 {
@@ -224,18 +227,19 @@ pub fn set_cfg_address(bdf: u32, offset: u32) -> Option<u64> {
 }
 
 pub fn pcie_dw_read_config(bdf: u32, offset: u32, valuep: &mut u64, size: PCI_SIZE) -> Result<i32, &str> {
-    info!("PCIE CFG  read: bdf={:2}:{:2}:{:2}, offset={:#x}", pci_bus(bdf), pci_dev(bdf), pci_func(bdf), offset);
+    trace!("PCIE CFG  read: bdf={:#x}= {:2}:{:2}:{:2}, offset={:#x}", bdf, pci_bus(bdf), pci_dev(bdf), pci_func(bdf), offset);
     if !pcie_dw_addr_valid(bdf, FIRST_BUSNO) {
-        debug!("bdf: {:#x} to read - out of range", bdf);
+        trace!("bdf: {:#x} to read - out of range", bdf);
         *valuep = pci_get_ff(size) as u64;
         return Ok(0);
     }
 
     if let Some(va_address) = set_cfg_address(bdf, offset) {
-        let value = readv(va_address as *const u64);
+        // 注，这里应该读32位，若一次读PCI 64位, 则会返回0xFF
+        let value: u32 = readv(va_address);
 
-        *valuep = pci_conv_32_to_size(value, offset, size);
-        debug!("Read @ {:#x}, value: {:#x}, converted to value: {:#x}", va_address, value, valuep);
+        *valuep = pci_conv_32_to_size(value as u64, offset, size);
+        trace!("Read @ {:#x}, value: {:#x}, converted to value: {:#x}", va_address, value, valuep);
     } else {
         error!("Set config address failed !");
     }
@@ -244,18 +248,18 @@ pub fn pcie_dw_read_config(bdf: u32, offset: u32, valuep: &mut u64, size: PCI_SI
 }
 
 pub fn pcie_dw_write_config(bdf: u32, offset: u32, value: u64, size: PCI_SIZE) -> Result<i32, &'static str> {
-    info!("PCIE CFG write: bdf={:2}:{:2}:{:2}, offset={:#x}, value={:#x}", pci_bus(bdf), pci_dev(bdf), pci_func(bdf), offset, value);
+    trace!("PCIE CFG write: bdf={:#x} ={:2}:{:2}:{:2}, offset={:#x}, value={:#x}", bdf, pci_bus(bdf), pci_dev(bdf), pci_func(bdf), offset, value);
     if !pcie_dw_addr_valid(bdf, FIRST_BUSNO) {
-        debug!("bdf: {:#x} to write - out of range", bdf);
+        trace!("bdf: {:#x} to write - out of range", bdf);
         return Ok(0);
     }
 
     if let Some(va_address) = set_cfg_address(bdf, offset) {
-        let old = readv(va_address as *const u64);
-        let value = pci_conv_size_to_32(old, value, offset, size);
+        let old: u32 = readv(va_address);
+        let value = pci_conv_size_to_32(old as u64, value, offset, size);
         
-        writev(va_address as *mut u64, value);
-        debug!("Write @ {:#x}, old: {:#x}, converted to value: {:#x}", va_address, old, value);
+        writev(va_address, value as u32);
+        trace!("Write @ {:#x}, old: {:#x}, converted to value: {:#x}", va_address, old, value);
     } else {
         error!("Set config address failed !");
     }
@@ -263,15 +267,17 @@ pub fn pcie_dw_write_config(bdf: u32, offset: u32, value: u64, size: PCI_SIZE) -
     pcie_dw_prog_outbound_atu_unroll(PCIE_ATU_REGION_INDEX1, PCIE_ATU_TYPE_IO, IO_BASE, IO_BUS_ADDR, IO_SIZE)
 }
             
-fn readv<T>(src: *const T) -> T {
-    debug!("read_volatile: {:#x}", phys_to_virt(src as usize));
-    unsafe { core::ptr::read_volatile(phys_to_virt(src as usize) as *const T) }
+fn readv<T>(src: u64) -> T {
+    let cell = phys_to_virt(src as usize);
+    trace!("read_volatile: {:#x}", cell);
+
+    super::read(cell)
 }
 
-fn writev<T>(dst: *mut T, value: T) {
-    debug!("write_volatile: {:#x}", phys_to_virt(dst as usize));
-    unsafe {
-        core::ptr::write_volatile(phys_to_virt(dst as usize) as *mut T, value);
-    }
+fn writev<T>(dst: u64, value: T) {
+    let cell = phys_to_virt(dst as usize);
+    trace!("write_volatile: {:#x}", cell);
+
+    super::write(cell, value);
 }
 
