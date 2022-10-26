@@ -1,5 +1,5 @@
 #![cfg_attr(not(feature = "libos"), no_std)]
-#![deny(warnings)]
+// #![deny(warnings)]
 #![no_main]
 #![feature(naked_functions, asm_sym, asm_const)]
 #![feature(default_alloc_error_handler)]
@@ -47,22 +47,50 @@ fn primary_main(config: kernel_hal::KernelConfig) {
     memory::insert_regions(&kernel_hal::mem::free_pmem_regions());
     kernel_hal::primary_init();
     STARTED.store(true, Ordering::SeqCst);
-    cfg_if! {
-        if #[cfg(all(feature = "linux", feature = "zircon"))] {
-            panic!("Feature `linux` and `zircon` cannot be enabled at the same time!");
-        } else if #[cfg(feature = "linux")] {
-            let args = options.root_proc.split('?').map(Into::into).collect(); // parse "arg0?arg1?arg2"
-            let envs = alloc::vec!["PATH=/usr/sbin:/usr/bin:/sbin:/bin".into()];
-            let rootfs = fs::rootfs();
-            let proc = zcore_loader::linux::run(args, envs, rootfs);
-            utils::wait_for_exit(Some(proc))
-        } else if #[cfg(feature = "zircon")] {
-            let zbi = fs::zbi();
-            let proc = zcore_loader::zircon::run_userboot(zbi, &options.cmdline);
-            utils::wait_for_exit(Some(proc))
-        } else {
-            panic!("One of the features `linux` or `zircon` must be specified!");
-        }
+
+
+    // use alloc::boxed::Box;
+    // let irq = kernel_hal::drivers::all_irq().find("riscv-plic").unwrap();
+    // let nvme = kernel_hal::drivers::all_block().find("nvme").unwrap();
+    // let irq_num = 33;
+    // let _r = irq.register_handler(irq_num, Box::new(move || nvme.handle_irq(irq_num)));
+
+    // let _r = irq.unmask(irq_num);
+
+    // let nvme_block = kernel_hal::drivers::all_block()
+    // .find("nvme")
+    // .unwrap();
+
+
+    use alloc::boxed::Box;
+    let irq = kernel_hal::drivers::all_irq().find("riscv-plic").unwrap();
+    let nvme = kernel_hal::drivers::all_block().find("nvme").unwrap();
+    let irq_num = 33;
+    let _r = irq.register_handler(irq_num, Box::new(move || nvme.handle_irq(irq_num)));
+
+    let _r = irq.unmask(irq_num);
+
+    let nvme_block = kernel_hal::drivers::all_block()
+    .find("nvme")
+    .unwrap();
+
+    let buf1:&[u8] = &[1u8;512];
+    let _r = nvme_block.write_block(0, &buf1);
+    warn!("r {:?}", _r);
+    let mut read_buf = [0u8; 512];
+    let _r = nvme_block.read_block(0, &mut read_buf);
+    warn!("read_buf: {:?}", read_buf);
+
+    let buf2:&[u8] = &[2u8;512];
+    let _r = nvme_block.write_block(1, &buf2);
+    warn!("r {:?}", _r);
+    let mut read_buf = [0u8; 512];
+    let _r = nvme_block.read_block(1, &mut read_buf);
+    warn!("read_buf: {:?}", read_buf);
+
+
+    loop{
+
     }
 }
 

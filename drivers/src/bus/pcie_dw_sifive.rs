@@ -149,7 +149,7 @@ fn pci_conv_size_to_32(old: u64, value: u64, offset: u32, size: PCI_SIZE) -> u64
 fn dw_pcie_writel_ob_unroll(index: u32, reg: u32, val: u32) {
     // PCIE_GET_ATU_OUTB_UNR_REG_OFFSET
     let offset = index << 9;
-    writev((ATU_BASE + (offset + reg) as u64), val);
+    writev(ATU_BASE + (offset + reg) as u64, val);
     trace!("writev value: {:#x}", val);
 }
 

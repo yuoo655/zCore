@@ -154,81 +154,149 @@ unsafe fn enable(loc: Location, paddr: u64) -> Option<usize> {
     // find MSI cap
     let mut msi_found = false;
     let mut cap_ptr = am.read8(ops, loc, PCI_CAP_PTR) as u16;
-    let mut assigned_irq = None;
-    while cap_ptr > 0 {
-        let cap_id = am.read8(ops, loc, cap_ptr);
-        if cap_id == PCI_CAP_ID_MSI {
-            let orig_ctrl = am.read32(ops, loc, cap_ptr + PCI_MSI_CTRL_CAP);
-            // The manual Volume 3 Chapter 10.11 Message Signalled Interrupts
-            // 0 is (usually) the apic id of the bsp.
-            //am.write32(ops, loc, cap_ptr + PCI_MSI_ADDR, 0xfee00000 | (0 << 12));
-            am.write32(ops, loc, cap_ptr + PCI_MSI_ADDR, 0xfee00000);
-            MSI_IRQ += 1;
-            let irq = MSI_IRQ;
-            assigned_irq = Some(irq as usize);
-            // we offset all our irq numbers by 32
-            if (orig_ctrl >> 16) & (1 << 7) != 0 {
-                // 64bit
-                am.write32(ops, loc, cap_ptr + PCI_MSI_DATA_64, irq + 32);
-            } else {
-                // 32bit
-                am.write32(ops, loc, cap_ptr + PCI_MSI_DATA_32, irq + 32);
-            }
+    // let mut assigned_irq = None;
+    // while cap_ptr > 0 {
+    //     let cap_id = am.read8(ops, loc, cap_ptr);
+    //     if cap_id == PCI_CAP_ID_MSI {
+    //         let orig_ctrl = am.read32(ops, loc, cap_ptr + PCI_MSI_CTRL_CAP);
+    //         // The manual Volume 3 Chapter 10.11 Message Signalled Interrupts
+    //         // 0 is (usually) the apic id of the bsp.
+    //         //am.write32(ops, loc, cap_ptr + PCI_MSI_ADDR, 0xfee00000 | (0 << 12));
+    //         am.write32(ops, loc, cap_ptr + PCI_MSI_ADDR, 0xfee00000);
+    //         MSI_IRQ += 1;
+    //         let irq = MSI_IRQ;
+    //         assigned_irq = Some(irq as usize);
+    //         // we offset all our irq numbers by 32
+    //         if (orig_ctrl >> 16) & (1 << 7) != 0 {
+    //             // 64bit
+    //             am.write32(ops, loc, cap_ptr + PCI_MSI_DATA_64, irq + 32);
+    //         } else {
+    //             // 32bit
+    //             am.write32(ops, loc, cap_ptr + PCI_MSI_DATA_32, irq + 32);
+    //         }
 
-            // enable MSI interrupt, assuming 64bit for now
-            am.write32(ops, loc, cap_ptr + PCI_MSI_CTRL_CAP, orig_ctrl | 0x10000);
-            debug!(
-                "MSI control {:#b}, enabling MSI interrupt {}",
-                orig_ctrl >> 16,
-                irq
-            );
-            msi_found = true;
-        }
-        debug!("PCI device has cap id {} at {:#X}", cap_id, cap_ptr);
-        cap_ptr = am.read8(ops, loc, cap_ptr + 1) as u16;
-    }
-
-    if !msi_found {
-        // am.write16(ops, loc, PCI_COMMAND, (0x2) as u16);
-        am.write16(ops, loc, PCI_COMMAND, 0x6);
-        am.write32(ops, loc, _PCI_INTERRUPT_LINE, 33);
-        debug!("MSI not found, using PCI interrupt");
-    }
+    //         // enable MSI interrupt, assuming 64bit for now
+    //         am.write32(ops, loc, cap_ptr + PCI_MSI_CTRL_CAP, orig_ctrl | 0x10000);
+    //         debug!(
+    //             "MSI control {:#b}, enabling MSI interrupt {}",
+    //             orig_ctrl >> 16,
+    //             irq
+    //         );
+    //         msi_found = true;
+    //     }
+    //     debug!("PCI device has cap id {} at {:#X}", cap_id, cap_ptr);
+    //     cap_ptr = am.read8(ops, loc, cap_ptr + 1) as u16;
+    // }
+    
+    am.write16(ops, loc, PCI_COMMAND, 0x6);
+    // am.write32(ops, loc, _PCI_INTERRUPT_LINE, 33);
+    // if !msi_found {
+    //     // am.write16(ops, loc, PCI_COMMAND, (0x2) as u16);
+    //     debug!("MSI not found, using PCI interrupt");
+    // }
 
     warn!("pci device enable done");
 
-    assigned_irq
+    Some(0x21)
 }
 
 pub fn init_driver(dev: &PCIDevice, mapper: &Option<Arc<dyn IoMapper>>) -> DeviceResult<Device> {
     let name = format!("enp{}s{}f{}", dev.loc.bus, dev.loc.device, dev.loc.function);
     match (dev.id.vendor_id, dev.id.device_id) {
-        (0x8086, 0x100e) | (0x8086, 0x100f) | (0x8086, 0x10d3) => {
-            if let Some(BAR::Memory(addr, len, _, _)) = dev.bars[0] {
-                #[cfg(target_arch = "riscv64")]
-                let addr = if addr == 0 { E1000_BASE as u64 } else { addr };
+        // (0x8086, 0x100e) | (0x8086, 0x100f) | (0x8086, 0x10d3) => {
+        //     if let Some(BAR::Memory(addr, len, _, _)) = dev.bars[0] {
+        //         #[cfg(target_arch = "riscv64")]
+        //         let addr = if addr == 0 { E1000_BASE as u64 } else { addr };
 
-                if let Some(m) = mapper {
-                    m.query_or_map(addr as usize, PAGE_SIZE * 8);
-                }
-                let irq = unsafe { enable(dev.loc, addr) };
-                let vaddr = phys_to_virt(addr as usize);
-                let dev = Device::Net(Arc::new(crate::net::e1000::init(
-                    name,
-                    irq.unwrap_or(0),
-                    vaddr,
-                    len as usize,
-                    0,
-                )?));
-                return Ok(dev);
+        //         if let Some(m) = mapper {
+        //             m.query_or_map(addr as usize, PAGE_SIZE * 8);
+        //         }
+        //         let irq = unsafe { enable(dev.loc, addr) };
+        //         let vaddr = phys_to_virt(addr as usize);
+        //         let dev = Device::Net(Arc::new(crate::net::e1000::init(
+        //             name,
+        //             irq.unwrap_or(0),
+        //             vaddr,
+        //             len as usize,
+        //             0,
+        //         )?));
+        //         return Ok(dev);
+        //     }
+        // }
+
+        // (0x1b36, 0x10) => {
+        //     if let Some(BAR::Memory(addr, _len, _, _)) = dev.bars[0] {
+        //         #[cfg(target_arch = "riscv64")]
+        //         let addr = if addr == 0 { E1000_BASE as u64 } else { addr };
+
+        //         if let Some(m) = mapper {
+        //             m.query_or_map(addr as usize, PAGE_SIZE * 8);
+        //         }
+
+        //         let irq = unsafe { enable(dev.loc, addr) };
+        //         let vaddr = phys_to_virt(addr as usize);
+
+        //         let blk = Arc::new(crate::nvme::NvmeInterface::new(vaddr, irq.unwrap_or(33))?);
+
+        //         let dev = Device::Block(blk);
+        //         return Ok(dev);
+        //     }
+        // }
+        // (0x8086, 0x10fb) => {
+        //     // 82599ES 10-Gigabit SFI/SFP+ Network Connection
+        //     if let Some(BAR::Memory(addr, _len, _, _)) = dev.bars[0] {
+        //         let irq = unsafe { enable(dev.loc, 0) };
+        //         let vaddr = phys_to_virt(addr as usize);
+        //         info!("Found ixgbe dev {:#x}, irq: {:?}", vaddr, irq);
+        //         /*
+        //         let index = NET_DRIVERS.read().len();
+        //         PCI_DRIVERS.lock().insert(
+        //             dev.loc,
+        //             ixgbe::ixgbe_init(name, irq, vaddr, len as usize, index),
+        //         );
+        //         */
+        //         return Err(DeviceError::NotSupported);
+        //     }
+        // }
+        // (0x8086, 0x1533) => {
+        //     if let Some(BAR::Memory(addr, _len, _, _)) = dev.bars[0] {
+        //         info!("Intel Corporation I210 Gigabit Network Connection");
+        //         info!("DEV: {:?}, BAR0: {:#x}", dev, addr);
+        //         return Err(DeviceError::NotSupported);
+        //     }
+        // }
+        // (0x8086, 0x1539) => {
+        //     if let Some(BAR::Memory(addr, _len, _, _)) = dev.bars[0] {
+        //         info!(
+        //             "Found Intel I211 ethernet controller dev {:?}, addr: {:x?}",
+        //             dev, addr
+        //         );
+        //         return Err(DeviceError::NotSupported);
+        //     }
+        // }
+
+        (0x1cc1, 0x21) => {
+            if let Some(BAR::Memory(addr, _len, _, _)) = dev.bars[0] {
+            info!(
+                "Found Mass storage controller  addr: {:#x?}",
+                addr
+            );
+            if let Some(m) = mapper {
+                m.query_or_map(addr as usize, PAGE_SIZE * 8);
+            }
+            let irq = unsafe { enable(dev.loc, addr) };
+            let vaddr = phys_to_virt(addr as usize);
+            let blk = Arc::new(crate::nvme::NvmeInterface::new(vaddr, irq.unwrap_or(33))?);
+            let dev = Device::Block(blk);
+            return Ok(dev);
             }
         }
-
-        (0x1b36, 0x10) => {
+        (0x144d, 0xa808) => {
             if let Some(BAR::Memory(addr, _len, _, _)) = dev.bars[0] {
-                #[cfg(target_arch = "riscv64")]
-                let addr = if addr == 0 { E1000_BASE as u64 } else { addr };
-
+                info!(
+                    "Found Mass storage controller  addr: {:#x?}",
+                    addr
+                );
                 if let Some(m) = mapper {
                     m.query_or_map(addr as usize, PAGE_SIZE * 8);
                 }
@@ -240,47 +308,6 @@ pub fn init_driver(dev: &PCIDevice, mapper: &Option<Arc<dyn IoMapper>>) -> Devic
 
                 let dev = Device::Block(blk);
                 return Ok(dev);
-            }
-        }
-        (0x8086, 0x10fb) => {
-            // 82599ES 10-Gigabit SFI/SFP+ Network Connection
-            if let Some(BAR::Memory(addr, _len, _, _)) = dev.bars[0] {
-                let irq = unsafe { enable(dev.loc, 0) };
-                let vaddr = phys_to_virt(addr as usize);
-                info!("Found ixgbe dev {:#x}, irq: {:?}", vaddr, irq);
-                /*
-                let index = NET_DRIVERS.read().len();
-                PCI_DRIVERS.lock().insert(
-                    dev.loc,
-                    ixgbe::ixgbe_init(name, irq, vaddr, len as usize, index),
-                );
-                */
-                return Err(DeviceError::NotSupported);
-            }
-        }
-        (0x8086, 0x1533) => {
-            if let Some(BAR::Memory(addr, _len, _, _)) = dev.bars[0] {
-                info!("Intel Corporation I210 Gigabit Network Connection");
-                info!("DEV: {:?}, BAR0: {:#x}", dev, addr);
-                return Err(DeviceError::NotSupported);
-            }
-        }
-        (0x8086, 0x1539) => {
-            if let Some(BAR::Memory(addr, _len, _, _)) = dev.bars[0] {
-                info!(
-                    "Found Intel I211 ethernet controller dev {:?}, addr: {:x?}",
-                    dev, addr
-                );
-                return Err(DeviceError::NotSupported);
-            }
-        }
-        (0x144d, 0xa808) => {
-            if let Some(BAR::Memory(addr, _len, _, _)) = dev.bars[0] {
-                info!(
-                    "Found Mass storage controller dev {:?}, addr: {:x?}",
-                    dev, addr
-                );
-                return Err(DeviceError::NotSupported);
             }
         }
         _ => {}
