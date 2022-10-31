@@ -1,7 +1,7 @@
 use lock::Mutex;
 use virtio_drivers::{VirtIOBlk as InnerDriver, VirtIOHeader};
 
-use crate::scheme::{BlockScheme, Scheme};
+use crate::scheme::{BlockScheme, Scheme, block};
 use crate::DeviceResult;
 
 pub struct VirtIoBlk<'a> {
@@ -26,6 +26,9 @@ impl<'a> Scheme for VirtIoBlk<'a> {
     }
 }
 
+use async_trait::async_trait;
+use alloc::boxed::Box;
+#[async_trait]
 impl<'a> BlockScheme for VirtIoBlk<'a> {
     fn read_block(&self, block_id: usize, buf: &mut [u8]) -> DeviceResult {
         self.inner.lock().read_block(block_id, buf)?;
@@ -39,5 +42,13 @@ impl<'a> BlockScheme for VirtIoBlk<'a> {
 
     fn flush(&self) -> DeviceResult {
         Ok(())
+    }
+
+    async fn async_read_block(&self, block_id: usize, buf: &mut [u8])-> usize{
+        0
+    }
+
+    async fn async_write_block(&self, block_id: usize, buf: &[u8])-> usize{
+        0
     }
 }

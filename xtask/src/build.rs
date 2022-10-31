@@ -194,6 +194,8 @@ impl QemuArgs {
             .arg(INNER.join(format!("{arch_str}.img")))
             .args(&["-append", "\"LOG=warn\""])
             .args(&["-display", "none"])
+            .args(&["-drive", "file=nvme.img,if=none,id=nvm"])
+            .args(&["-device", "nvme,serial=deadbeef,drive=nvm"])
             .arg("-no-reboot")
             .arg("-nographic")
             .optional(&self.smp, |qemu, smp| {
