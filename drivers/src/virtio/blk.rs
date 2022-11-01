@@ -44,11 +44,11 @@ impl<'a> BlockScheme for VirtIoBlk<'a> {
         Ok(())
     }
 
-    async fn async_read_block(&self, block_id: usize, buf: &mut [u8])-> usize{
-        0
+    async fn async_read_block(&self, block_id: usize, buf: &mut [u8]){
+        warn!("111");
     }
 
-    async fn async_write_block(&self, block_id: usize, buf: &[u8])-> usize{
-        0
+    async fn async_write_block(&self, block_id: usize, buf: &[u8]){
+        warn!("111");
     }
 }

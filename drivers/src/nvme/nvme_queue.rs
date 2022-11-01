@@ -7,27 +7,23 @@ use super::NvmeCompletion;
 
 #[derive(Debug)]
 pub struct NvmeQueue<P: Provider> {
-    provider: PhantomData<P>,
+    dma_data: PhantomData<P>,
 
     pub sq: &'static mut [Volatile<NvmeCommonCommand>],
     pub cq: &'static mut [Volatile<NvmeCompletion>],
 
+    pub qid: usize,
+    
     pub db_offset: usize,
 
-    pub qid: usize,
-
     pub cq_head: usize,
-
     pub cq_phase: usize,
 
     pub sq_tail: usize,
-
     pub last_sq_tail: usize,
 
     pub sq_pa: usize,
-
     pub cq_pa: usize,
-
     pub data_pa: usize,
 }
 
@@ -37,8 +33,6 @@ impl<P: Provider> NvmeQueue<P> {
         let (sq_va, sq_pa) = P::alloc_dma(P::PAGE_SIZE * 2);
         let (cq_va, cq_pa) = P::alloc_dma(P::PAGE_SIZE * 2);
 
-        trace!("data_va: {:x}, data_pa: {:x}", data_va, data_pa);
-
         let submit_queue = unsafe {
             slice::from_raw_parts_mut(sq_va as *mut Volatile<NvmeCommonCommand>, PAGE_SIZE)
         };
@@ -47,7 +41,7 @@ impl<P: Provider> NvmeQueue<P> {
             unsafe { slice::from_raw_parts_mut(cq_va as *mut Volatile<NvmeCompletion>, PAGE_SIZE) };
 
         NvmeQueue {
-            provider: PhantomData,
+            dma_data: PhantomData,
             sq: submit_queue,
             cq: complete_queue,
             db_offset,

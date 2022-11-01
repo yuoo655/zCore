@@ -1,0 +1,145 @@
+strip zcore to /home/y/dev/yuoo655/zCore/target/riscv64/release/zcore.bin
+WARNING: Image format was not specified for 'nvme.img' and probing guessed raw.
+         Automatically detecting the format is dangerous for raw images, write operations on block 0 will be restricted.
+         Specify the 'raw' format explicitly to remove the restrictions.
+
+OpenSBI v1.0
+   ____                    _____ ____ _____
+  / __ \                  / ____|  _ \_   _|
+ | |  | |_ __   ___ _ __ | (___ | |_) || |
+ | |  | | '_ \ / _ \ '_ \ \___ \|  _ < | |
+ | |__| | |_) |  __/ | | |____) | |_) || |_
+  \____/| .__/ \___|_| |_|_____/|____/_____|
+        | |
+        |_|
+
+Platform Name             : riscv-virtio,qemu
+Platform Features         : medeleg
+Platform HART Count       : 1
+Platform IPI Device       : aclint-mswi
+Platform Timer Device     : aclint-mtimer @ 10000000Hz
+Platform Console Device   : uart8250
+Platform HSM Device       : ---
+Platform Reboot Device    : sifive_test
+Platform Shutdown Device  : sifive_test
+Firmware Base             : 0x80000000
+Firmware Size             : 252 KB
+Runtime SBI Version       : 0.3
+
+Domain0 Name              : root
+Domain0 Boot HART         : 0
+Domain0 HARTs             : 0*
+Domain0 Region00          : 0x0000000002000000-0x000000000200ffff (I)
+Domain0 Region01          : 0x0000000080000000-0x000000008003ffff ()
+Domain0 Region02          : 0x0000000000000000-0xffffffffffffffff (R,W,X)
+Domain0 Next Address      : 0x0000000080200000
+Domain0 Next Arg1         : 0x00000000bfe00000
+Domain0 Next Mode         : S-mode
+Domain0 SysReset          : yes
+
+Boot HART ID              : 0
+Boot HART Domain          : root
+Boot HART ISA             : rv64imafdcsuh
+Boot HART Features        : scounteren,mcounteren,mcountinhibit,time
+Boot HART PMP Count       : 16
+Boot HART PMP Granularity : 4
+Boot HART PMP Address Bits: 54
+Boot HART MHPM Count      : 16
+Boot HART MIDELEG         : 0x0000000000001666
+Boot HART MEDELEG         : 0x0000000000f0b509
+
+boot page table launched, sstatus = 0x8000000200046000
+kernel (physical): 0000000080200000..000000008051e300
+kernel (remapped): ffffffc080200000..ffffffc08051e300
+device tree:       00000000bfe00000..00000000bfe0140a
+
+hart0 is the primary hart.
+
+[  0.000666 INFO  0 0:0 zcore::memory] MEMORY = 0xffffffc08031e068..0xffffffc08051e068
+[  0.000698 INFO  0 0:0 kernel_hal::imp::boot] Primary CPU 0 init early...
+[  0.000711 INFO  0 0:0 zcore_drivers::utils::devicetree] Loading device tree blob from 0xffffffc0bfe00000
+[  0.000798 INFO  0 0:0 kernel_hal::imp::arch] Load kernel cmdline from DTB: "\"LOG=warn\""
+[  0.000819 INFO  0 0:0 kernel_hal::imp::arch] Load CPU clock frequency from DTB: 10000000 Hz
+[  0.083580 INFO  0 0:0 kernel_hal::imp::arch] Load initrd regions from DTB: 0x88200000..0x888d3a00
+[  0.086193 INFO  0 0:0 kernel_hal::imp::arch] Load memory regions from DTB: [
+    0x80000000..0x100000000,
+]
+[  0.090530 INFO  0 0:0 zcore] Boot options: BootOptions {
+    cmdline: "\"LOG=warn\"",
+    log_level: "",
+    root_proc: "/bin/busybox?sh",
+}
+[  0.105950 INFO  0 0:0 kernel_hal::imp::boot] Primary CPU 0 init...
+[  0.118043 INFO  0 0:0 kernel_hal::imp::arch::vm] FREE PHY MEM: 80520000..88200000
+[  0.122401 INFO  0 0:0 kernel_hal::imp::arch::vm] FREE PHY MEM: 888d4000..bfe00000
+[  0.131350 INFO  0 0:0 kernel_hal::imp::arch::vm] FREE PHY MEM: bfe02000..100000000
+[  0.139300 INFO  0 0:0 kernel_hal::imp::arch::vm] initialized kernel page table @ 0x8051d000
+[  0.141827 INFO  0 0:0 zcore_drivers::utils::devicetree] Loading device tree blob from 0xffffffc0bfe00000
+[  0.152621 INFO  0 0:0 zcore_drivers::builder::devicetree] device-tree: register interrupts for IrqDevice("riscv-plic"): UartDevice("uart16550-mmio"), irq_num=10
+[  0.154966 ERROR 0 0:0 zcore_drivers::irq::riscv_plic] plic register_handler: 10
+[  0.156145 INFO  0 0:0 zcore_drivers::utils::irq_manager] IRQ register handler 10
+[  0.157947 INFO  0 0:0 zcore_drivers::builder::devicetree] device-tree: register interrupts for IrqDevice("riscv-intc-cpu0"): IrqDevice("riscv-plic"), irq_num=9
+[  0.164368 INFO  0 0:0 zcore_drivers::bus::pci] 
+[  0.165332 INFO  0 0:0 zcore_drivers::bus::pci] --------- PCI bus:device:function ---------
+[  0.166396 WARN  0 0:0 pci] probe_function
+[  0.166919 WARN  0 0:0 pci] PCI probe: 0x8 0x1b36 @ Location { bus: 0, device: 0, function: 0 }
+[  0.168877 WARN  0 0:0 pci] BAR[0]: None
+[  0.169527 WARN  0 0:0 pci] BAR[1]: None
+[  0.169948 WARN  0 0:0 pci] BAR[2]: None
+[  0.170360 WARN  0 0:0 pci] BAR[3]: None
+[  0.170764 WARN  0 0:0 pci] BAR[4]: None
+[  0.171197 WARN  0 0:0 pci] BAR[5]: None
+[  0.172296 INFO  0 0:0 zcore_drivers::bus::pci] pci: 0:0:0 1b36:0008 (6 0) irq: 0:None
+[  0.173767 WARN  0 0:0 zcore_drivers::bus::pci] NoResources, failed to initialize PCI device: 1b36:0008
+[  0.174986 WARN  0 0:0 pci] probe_function
+[  0.175626 WARN  0 0:0 pci] PCI probe: 0x10 0x1b36 @ Location { bus: 0, device: 1, function: 0 }
+[  0.177243 WARN  0 0:0 pci] BAR[0]: Some(Memory(0, 3ffe, No, Bits64))
+[  0.178912 WARN  0 0:0 pci] BAR[2]: None
+[  0.179561 WARN  0 0:0 pci] BAR[3]: None
+[  0.180206 WARN  0 0:0 pci] BAR[4]: None
+[  0.180856 WARN  0 0:0 pci] BAR[5]: None
+[  0.181509 INFO  0 0:0 zcore_drivers::bus::pci] pci: 0:1:0 1b36:0010 (1 8) irq: 0:Some(INTA)
+[  0.183154 WARN  0 0:0 zcore_drivers::bus::pci] BAR0 set from 0x4 to 0x40000004
+[  0.184321 WARN  0 0:0 zcore_drivers::bus::pci] PCI device has cap id 17 at 0x40
+[  0.185319 WARN  0 0:0 zcore_drivers::bus::pci] PCI device has cap id 16 at 0x80
+[  0.186201 WARN  0 0:0 zcore_drivers::bus::pci] PCI device has cap id 1 at 0x60
+[  0.187932 WARN  0 0:0 zcore_drivers::bus::pci] MSI not found, using PCI interrupt
+[  0.188733 WARN  0 0:0 zcore_drivers::bus::pci] pci device enable done
+[  0.294414 INFO  0 0:0 zcore_drivers::bus::pci] ---------
+[  0.295354 INFO  0 0:0 zcore_drivers::bus::pci] 
+[  0.297307 INFO  0 0:0 zcore] hello world
+[  0.298051 INFO  0 0:0 zcore] hello world
+[  0.299334 ERROR 0 0:0 zcore_drivers::irq::riscv_plic] plic register_handler: 33
+[  0.300188 INFO  0 0:0 zcore_drivers::utils::irq_manager] IRQ register handler 33
+[  0.301256 INFO  0 0:0 zcore] sleep 5
+[  5.001301 WARN  0 0:0 zcore_drivers::nvme::interface] async write block
+[  5.002336 WARN  0 0:0 zcore_drivers::nvme::interface] write block
+[  5.003408 WARN  0 0:0 zcore_drivers::nvme::interface] send write command cid 273 tail 4
+[  5.005717 INFO  0 0:0 kernel_hal::imp::arch::trap] kernel trap happened: Interrupt(9)
+[  5.007365 WARN  0 0:0 zcore_drivers::nvme::interface] nvme device irq 33
+[  5.008189 WARN  0 0:0 zcore_drivers::nvme::interface] tail 4
+[  5.008935 WARN  0 0:0 zcore_drivers::nvme::interface] status NvmeCompletion {
+    result: 0x0,
+    sq_head: 0x5,
+    sq_id: 0x1,
+    command_id: 0x111,
+    status: 0x1,
+}
+[  5.011024 INFO  0 0:0 zcore] wake_by_ref
+[  5.011630 ERROR 0 0:0 zcore_drivers::irq::riscv_plic] riscv plic handle irq: 33
+[  5.012804 INFO  0 0:0 zcore] sleep 5
+[ 10.000211 WARN  0 0:0 zcore_drivers::nvme::interface] async write block
+[ 10.001059 WARN  0 0:0 zcore_drivers::nvme::interface] write block
+[ 10.002613 WARN  0 0:0 zcore_drivers::nvme::interface] send write command cid 273 tail 5
+[ 10.004520 INFO  0 0:0 kernel_hal::imp::arch::trap] kernel trap happened: Interrupt(9)
+[ 10.005521 WARN  0 0:0 zcore_drivers::nvme::interface] nvme device irq 33
+[ 10.006228 WARN  0 0:0 zcore_drivers::nvme::interface] tail 5
+[ 10.006843 WARN  0 0:0 zcore_drivers::nvme::interface] status NvmeCompletion {
+    result: 0x0,
+    sq_head: 0x6,
+    sq_id: 0x1,
+    command_id: 0x111,
+    status: 0x1,
+}
+[ 10.008237 INFO  0 0:0 zcore] wake_by_ref
+[ 10.008758 ERROR 0 0:0 zcore_drivers::irq::riscv_plic] riscv plic handle irq: 33

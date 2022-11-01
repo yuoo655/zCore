@@ -196,11 +196,15 @@ impl QemuArgs {
             .args(&["-display", "none"])
             .args(&["-drive", "file=nvme.img,if=none,id=nvm"])
             .args(&["-device", "nvme,serial=deadbeef,drive=nvm"])
+            // .args(&["--trace ", "\"pci_nvme_*\""])
             .arg("-no-reboot")
             .arg("-nographic")
-            .optional(&self.smp, |qemu, smp| {
-                qemu.args(&["-smp", &smp.to_string()]);
-            });
+            .args([&"-smp", "1"]);
+
+            // .optional({
+            //     qemu.args(&["-smp", "1"]);
+            //     // qemu.args(&["-smp", &smp.to_string()]);
+            // });
         match arch {
             Arch::Riscv64 => {
                 qemu.args(&["-machine", "virt"])

@@ -62,6 +62,8 @@ fn init_kernel_page_table() -> PagingResult<PageTable> {
         bootstacktop as usize,
         MMUFlags::READ | MMUFlags::WRITE,
     )?;
+
+
     // initrd
     if let Some(initrd) = super::INITRD_REGION.as_ref() {
         map_range(

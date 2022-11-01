@@ -4,7 +4,7 @@ use crate::IpiReason;
 use alloc::vec::Vec;
 use riscv::register::scause;
 use trapframe::TrapFrame;
-pub(super) const SUPERVISOR_TIMER_INT_VEC: usize = 5; // scause::Interrupt::SupervisorTimer
+pub(super) const SUPERVISOR_TIMER_INT_VEC: usize = 1; // scause::Interrupt::SupervisorTimer
 
 fn breakpoint(sepc: &mut usize) {
     info!("Exception::Breakpoint: A breakpoint set @0x{:x} ", sepc);
@@ -33,7 +33,7 @@ pub(super) fn super_soft() {
 #[no_mangle]
 pub extern "C" fn trap_handler(tf: &mut TrapFrame) {
     let scause = scause::read();
-    trace!("kernel trap happened: {:?}", TrapReason::from(scause));
+    debug!("kernel trap happened: {:?}", TrapReason::from(scause));
     trace!(
         "sepc = 0x{:x} pgtoken = 0x{:x}",
         tf.sepc,

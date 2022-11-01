@@ -79,6 +79,10 @@ impl Scheme for Intc {
 }
 
 impl IrqScheme for Intc {
+    fn clear_irq(&self, irq_num: usize){
+
+    }
+
     fn is_valid_irq(&self, cause: usize) -> bool {
         matches!(cause, S_SOFT | S_TIMER | S_EXT)
     }

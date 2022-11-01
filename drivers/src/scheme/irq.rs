@@ -21,6 +21,9 @@ pub enum IrqPolarity {
 }
 
 pub trait IrqScheme: Scheme {
+
+    fn clear_irq(&self, irq_num: usize);
+
     /// Is a valid IRQ number.
     fn is_valid_irq(&self, irq_num: usize) -> bool;
 

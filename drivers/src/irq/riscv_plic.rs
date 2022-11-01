@@ -175,6 +175,12 @@ impl Scheme for Plic {
 }
 
 impl IrqScheme for Plic {
+
+    fn clear_irq(&self, irq_num: usize){
+        let mut inner = self.inner.lock();
+        inner.eoi(irq_num);
+    }
+
     fn is_valid_irq(&self, irq_num: usize) -> bool {
         IRQ_RANGE.contains(&irq_num)
     }
