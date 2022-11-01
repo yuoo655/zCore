@@ -52,14 +52,11 @@ fn primary_main(config: kernel_hal::KernelConfig) {
     kernel_hal::primary_init();
     STARTED.store(true, Ordering::SeqCst);
 
-
-
-
     
     info!("hello world");
     nvme_test();
 
-
+    info!("end");
 
     loop{
         
@@ -99,6 +96,8 @@ use core::future::poll_fn;
 use core::task::{RawWaker, RawWakerVTable};
 
 use alloc::sync::Arc;
+use alloc::vec::Vec;
+
 
 
 fn nvme_test(){
@@ -117,69 +116,86 @@ fn nvme_test(){
     use linux_object::time::*;
     let time_old = TimeSpec::now().sec;
 
-    info!("sleep 5");
-    while (TimeSpec::now().sec - time_old) < 5 {
+    // info!("sleep 5");
+    // while (TimeSpec::now().sec - time_old) < 5 {
 
-    }
+    // }
 
-
+    irq.clear_irq(0x21);
+    irq.clear_irq(0x21);
+    irq.clear_irq(0x21);
+    irq.clear_irq(0x21);
+    irq.clear_irq(0x21);
+    
     
     
     static buf1:&[u8] = &[1u8;512];
     unsafe{
         let mut f1 = nvme_block.async_write_block(0, &buf1);
-        let wake1 =  MyWaker {};
-        let mywaker = Arc::new(wake1);
-        let waker = mywaker_into_waker(Arc::into_raw(mywaker));
-        let mut cx = Context::from_waker(&waker);
-
+        // executor::spawn(f1);
         
+        
+        // info!("executor run!");
+        // loop {
+        //     let has_task = executor::run_until_idle();
+        //     kernel_hal::interrupt::wait_for_interrupt();
+        // }
         loop {
+            let wake1 =  MyWaker {};
+            let mywaker = Arc::new(wake1);
+            let waker = mywaker_into_waker(Arc::into_raw(mywaker));
+            let mut cx = Context::from_waker(&waker);
             match Future::poll(f1.as_mut(), &mut cx) {
                 Poll::Ready(()) => {
                     break
                 }
                 Poll::Pending => {
-                    #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
-                    unsafe{
-                        use riscv::register::sstatus;
-                        use riscv::register::sie;
-                        unsafe {
-                            sie::set_sext();
-                            sstatus::set_sie();
-                        }
-                    }
                 },
             };
         }
     }
-
-    info!("sleep 5");
-    let time_old = TimeSpec::now().sec;
-    while (TimeSpec::now().sec - time_old) < 5 {
-
-    }
-
-
-    // static mut read_buf:[u8; 512] = [0u8; 512];
     static buf2:&[u8] = &[2u8;512];
     unsafe{
         let mut f2 = nvme_block.async_write_block(1, &buf2);
-        let wake2 =  MyWaker {};
-        let mywaker = Arc::new(wake2);
-        let waker = mywaker_into_waker(Arc::into_raw(mywaker));
-        let mut cx = Context::from_waker(&waker);
-        loop {
-            match Future::poll(f2.as_mut(), &mut cx) {
-                Poll::Ready(()) => {
-                    break
-                }
-                Poll::Pending => {
-
-                },
-            };
+    }
+    
+    #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
+    unsafe{
+        use riscv::register::sstatus;
+        use riscv::register::sie;
+        unsafe {
+            sie::set_sext();
+            sstatus::set_sie();
         }
     }
+
+    // executor::run_until_idle();
+
+    // irq.clear_irq(0x21);
+
+    // info!("sleep 5");
+    // let time_old = TimeSpec::now().sec;
+    // while (TimeSpec::now().sec - time_old) < 5 {
+
+    // }
+
+
+    // static mut read_buf:[u8; 512] = [0u8; 512];
+    //     loop {
+    //         let wake2 =  MyWaker {};
+    //         let mywaker = Arc::new(wake2);
+    //         let waker = mywaker_into_waker(Arc::into_raw(mywaker));
+    //         let mut cx = Context::from_waker(&waker);
+    //         match Future::poll(f2.as_mut(), &mut cx) {
+    //             Poll::Ready(()) => {
+    //                 break
+    //             }
+    //             Poll::Pending => {
+
+    //             },
+    //         };
+    //     }
+    // }
     // unsafe{
     //     info!("read_buf = {:?}", read_buf);
     // }
@@ -239,80 +255,3 @@ fn mywaker_into_waker(s: *const MyWaker) -> Waker {
 
 
 use lock::Mutex;
-
-// //Task包装协程
-// pub struct Task{
-//     // future
-//     pub future: Mutex<Pin<Box<dyn Future<Output=()> + Send>>>, 
-// }
-
-// impl Task{
-//     pub fn new(future: Pin<Box<dyn Future<Output=()> +  Send >>) -> Self{
-//         Task{
-//             future: Mutex::new(future),
-//         }
-//     }
-//     pub fn do_wake(self: &Arc<Self>) {
-//         // todo!()
-//     }
-// }
-
-// impl Future for Task {
-//     type Output = usize;
-//     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-//         let mut f = self.future.lock();
-//         match f.as_mut().poll(cx) {
-//             Poll::Ready(_) => {
-//                 Poll::Ready(1)
-//             },
-//             Poll::Pending => {
-//                 Poll::Pending
-//             }
-//         }
-
-//     }
-// }
-
-// use alloc::collections::VecDeque;
-// pub struct TaskQueue {
-//     pub queue: VecDeque<Arc<Task>>,
-// }
-// impl TaskQueue {
-//     pub fn add_task(&mut self, task: Task) {
-//         self.queue.push_front(Arc::new(task));
-//     }
-
-//     pub fn add_arc_task(&mut self, task: Arc<Task>) {
-//         self.queue.push_back(task);
-//     }
-
-//     pub fn peek_task(&mut self) -> Option<Arc<Task>> {
-//         self.queue.pop_front()
-//     }
-
-//     pub fn is_empty(&self) -> bool {
-//         self.queue.is_empty()
-//     }
-
-// }
-
-// impl woke::Woke for Task {
-//     fn wake_by_ref(task: &Arc<Self>) {
-//         task.do_wake()
-//     }
-// }
-
-
-// lazy_static::lazy_static! {
-//     pub static ref TASK_QUEUE: Arc<Mutex<Box<TaskQueue>>> =
-//     Arc::new(
-//         Mutex::new(
-//             Box::new(
-//                 TaskQueue {
-//                     queue: VecDeque::new()
-//                 }
-//             )
-//         )
-//     );
-// }
-
