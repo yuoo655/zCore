@@ -266,8 +266,8 @@ impl NvmeInterface {
     fn send_write_command(&self, block_id:usize, write_buf: &[u8]) -> usize{
         warn!("write block");
 
-        // let cid = NVME_COMMAND_ID.lock().load(Ordering::SeqCst);
-        // NVME_COMMAND_ID.lock().store(cid + 1, Ordering::Relaxed);
+        let cid = NVME_COMMAND_ID.lock().load(Ordering::SeqCst);
+        NVME_COMMAND_ID.lock().store(cid + 1, Ordering::Relaxed);
 
         // let io_queue = self.io_queues[0].lock();
         let db_offset = 0x8;
@@ -284,7 +284,7 @@ impl NvmeInterface {
         cmd.nsid = 1;
         cmd.prp1 = addr as u64;
         cmd.length = 0;
-        cmd.command_id = 0x111 as u16;
+        cmd.command_id = cid as u16;
         cmd.slba = block_id as u64;
 
         // transmute to common command
@@ -303,7 +303,7 @@ impl NvmeInterface {
         unsafe { write_volatile((dbs + db_offset) as *mut u32, (tail + 1) as u32) }
 
         warn!("send write command cid {:?} tail {:?}", 0x111, tail);
-        0x111 as usize
+        cid as usize
     }
 
 }
