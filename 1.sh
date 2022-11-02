@@ -4,4 +4,5 @@ rust-objcopy --binary-architecture=riscv64 ../target/riscv64/release/zcore --str
 cd ..
 qemu-system-riscv64 -smp 1 -machine virt -bios default -m 2G -no-reboot -serial mon:stdio -serial file:/tmp/serial.out -kernel target/riscv64/release/zcore.bin  -append "LOG=warn" -drive file=nvme.img,if=none,id=nvm -device nvme,serial=deadbeef,drive=nvm
 
+cat | head -c 1024 ./nvme.img | xxd
 # make rootfs ARCH=riscv64
