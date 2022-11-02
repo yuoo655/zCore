@@ -52,10 +52,8 @@ fn primary_main(config: kernel_hal::KernelConfig) {
     kernel_hal::primary_init();
     STARTED.store(true, Ordering::SeqCst);
 
-    
-    info!("hello world");
-    nvme_test();
 
+    nvme_test();
     info!("end");
 
     loop{
@@ -101,24 +99,18 @@ use alloc::vec::Vec;
 
 
 fn nvme_test(){
-
-    info!("hello world");
-
     let irq = kernel_hal::drivers::all_irq().find("riscv-plic").unwrap();
     let nvme = kernel_hal::drivers::all_block().find("nvme").unwrap();
     let irq_num = 0x21;
     let _r = irq.register_handler(irq_num, Box::new(move || nvme.handle_irq(irq_num)));
     let _r = irq.unmask(irq_num);
-    
     let nvme_block = kernel_hal::drivers::all_block().find("nvme").unwrap();
-    
     
     use linux_object::time::*;
     let time_old = TimeSpec::now().sec;
 
     // info!("sleep 5");
     // while (TimeSpec::now().sec - time_old) < 5 {
-
     // }
 
     irq.clear_irq(0x21);
@@ -127,25 +119,41 @@ fn nvme_test(){
     irq.clear_irq(0x21);
     irq.clear_irq(0x21);
     
-    
-    
     static buf1:&[u8] = &[1u8;512];
     unsafe{
         let mut f1 = nvme_block.async_write_block(0, &buf1);
-        // executor::spawn(f1);
-        
-        
-        // info!("executor run!");
-        // loop {
-        //     let has_task = executor::run_until_idle();
-        //     kernel_hal::interrupt::wait_for_interrupt();
-        // }
+        let wake1 =  MyWaker {};
+        let mywaker = Arc::new(wake1);
+        let waker = mywaker_into_waker(Arc::into_raw(mywaker));
+        let mut cx = Context::from_waker(&waker);
         loop {
-            let wake1 =  MyWaker {};
-            let mywaker = Arc::new(wake1);
-            let waker = mywaker_into_waker(Arc::into_raw(mywaker));
-            let mut cx = Context::from_waker(&waker);
             match Future::poll(f1.as_mut(), &mut cx) {
+                Poll::Ready(()) => {
+                    break
+                }
+                Poll::Pending => {
+                    #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
+                    unsafe{
+                        use riscv::register::sstatus;
+                        use riscv::register::sie;
+                        unsafe {
+                            sie::set_sext();
+                            sstatus::set_sie();
+                        }
+                    }
+                },
+            };
+        }
+    }
+    static buf2:&[u8] = &[2u8;512];
+    unsafe{
+        let mut f2 = nvme_block.async_write_block(1, &buf2);
+        let wake2 =  MyWaker {};
+        let mywaker = Arc::new(wake2);
+        let waker = mywaker_into_waker(Arc::into_raw(mywaker));
+        let mut cx = Context::from_waker(&waker);
+        loop {
+            match Future::poll(f2.as_mut(), &mut cx) {
                 Poll::Ready(()) => {
                     break
                 }
@@ -154,54 +162,7 @@ fn nvme_test(){
             };
         }
     }
-    static buf2:&[u8] = &[2u8;512];
-    unsafe{
-        let mut f2 = nvme_block.async_write_block(1, &buf2);
-    }
     
-    #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
-    unsafe{
-        use riscv::register::sstatus;
-        use riscv::register::sie;
-        unsafe {
-            sie::set_sext();
-            sstatus::set_sie();
-        }
-    }
-
-    // executor::run_until_idle();
-
-    // irq.clear_irq(0x21);
-
-    // info!("sleep 5");
-    // let time_old = TimeSpec::now().sec;
-    // while (TimeSpec::now().sec - time_old) < 5 {
-
-    // }
-
-
-    // static mut read_buf:[u8; 512] = [0u8; 512];
-    //     loop {
-    //         let wake2 =  MyWaker {};
-    //         let mywaker = Arc::new(wake2);
-    //         let waker = mywaker_into_waker(Arc::into_raw(mywaker));
-    //         let mut cx = Context::from_waker(&waker);
-    //         match Future::poll(f2.as_mut(), &mut cx) {
-    //             Poll::Ready(()) => {
-    //                 break
-    //             }
-    //             Poll::Pending => {
-
-    //             },
-    //         };
-    //     }
-    // }
-    // unsafe{
-    //     info!("read_buf = {:?}", read_buf);
-    // }
-   
-    
-
     // static buf2:&[u8] = &[3u8;512];
     // unsafe{
     //     let f3 = nvme_block.async_write_block(2, &buf2);
@@ -228,8 +189,6 @@ const VTABLE: RawWakerVTable = unsafe {
     )
 };
 
-
-
 #[derive(Clone)]
 struct MyWaker {
 }
@@ -249,9 +208,3 @@ fn mywaker_into_waker(s: *const MyWaker) -> Waker {
     let raw_waker = RawWaker::new(s as *const (), &VTABLE);
     unsafe { Waker::from_raw(raw_waker) }
 }
-
-
-
-
-
-use lock::Mutex;

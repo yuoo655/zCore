@@ -493,7 +493,7 @@ impl Future for NvmeFuture{
     type Output = ();
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        info!("poll nvme future");
+        // info!("poll nvme future");
         let waker = cx.waker().clone();
 
         if !self.irq_occurred.load(Ordering::SeqCst) {
