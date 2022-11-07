@@ -453,6 +453,7 @@ impl Scheme for NvmeInterface {
 
 
 impl NvmeInterface{
+    // write command to submission queue and write sq doorbell to notify nvme device
     pub fn sync_command(&self, nvmeq: &mut MutexGuard<NvmeQueue<ProviderImpl>>, cmd: NvmeCommonCommand){
         let sq_tail = nvmeq.sq_tail;
         nvmeq.sq[sq_tail].write(cmd);
@@ -466,6 +467,7 @@ impl NvmeInterface{
         self.nvme_write_sq_db(nvmeq, true);
     }
 
+    // check completion queue and update cq head cq doorbell until there is no pending command
     pub fn nvme_poll_cq(&self, nvmeq: &mut MutexGuard<NvmeQueue<ProviderImpl>>){
 
         while self.nvme_cqe_pending(nvmeq){
@@ -474,6 +476,7 @@ impl NvmeInterface{
         }
     }
 
+    // check if there is completed command in completion queue
     pub fn nvme_cqe_pending(&self, nvmeq:&mut  MutexGuard<NvmeQueue<ProviderImpl>>)-> bool{
 
         let cq_head = nvmeq.cq_head;
@@ -485,12 +488,14 @@ impl NvmeInterface{
         }
     }
 
+    // notify nvme device we've completed the command
     pub fn nvme_ring_cq_doorbell(&self, nvmeq: &mut MutexGuard<NvmeQueue<ProviderImpl>>){
         let cq_head = nvmeq.cq_head;
         let q_db = self.bar + NVME_REG_DBS + nvmeq.db_offset;
         unsafe { write_volatile((q_db + 0x4) as *mut u32, cq_head as u32) }
     }
 
+    // write submission queue doorbell to notify nvme device
     pub fn nvme_write_sq_db(&self, nvmeq: &mut MutexGuard<NvmeQueue<ProviderImpl>>, write_sq: bool) {
     
 	    if !write_sq {
@@ -508,6 +513,7 @@ impl NvmeInterface{
         nvmeq.last_sq_tail = nvmeq.sq_tail;
     }
 
+    // update completion queue head
     pub fn nvme_update_cq_head(&self, nvmeq: &mut MutexGuard<NvmeQueue<ProviderImpl>>) {
         let next_head = nvmeq.cq_head + 1;
         if next_head == nvmeq.q_depth{
