@@ -52,9 +52,9 @@ fn primary_main(config: kernel_hal::KernelConfig) {
     kernel_hal::primary_init();
     STARTED.store(true, Ordering::SeqCst);
 
-    test();
+    // test();
 
-    // nvme_test();
+    nvme_test();
 
     panic!("end");
 }
@@ -129,27 +129,7 @@ fn nvme_test(){
     let _r = irq.register_handler(irq_num, Box::new(move || nvme.handle_irq(irq_num)));
     let _r = irq.unmask(irq_num);
     let nvme_block = kernel_hal::drivers::all_block().find("nvme").unwrap();
-    
-    // use linux_object::time::*;
-    // let time_old = TimeSpec::now().sec;
-    // while (TimeSpec::now().sec - time_old) < 5 {
-    // }
 
-    // info!("sleep 5");
-    // irq.clear_irq(0x9);
-    // irq.clear_irq(0x21);
-    // irq.clear_irq(0x9);
-    // irq.clear_irq(0x21);
-    // irq.clear_irq(0x9);
-    // irq.clear_irq(0x21);
-    // irq.clear_irq(0x9);
-    // irq.clear_irq(0x21);
-    // irq.clear_irq(0x9);
-    // irq.clear_irq(0x21);
-    // irq.clear_irq(0x9);
-    // irq.clear_irq(0x21);
-    // irq.clear_irq(0x9);
-    // irq.clear_irq(0x21);
     drop(irq);
     static buf1:&[u8] = &[1u8;512];
     unsafe{
@@ -177,14 +157,6 @@ fn nvme_test(){
             };
         }
     }
-    // irq.clear_irq(0x9);
-    // irq.clear_irq(0x21);
-    // irq.clear_irq(0x1);
-
-    use linux_object::time::*;
-    let time_old = TimeSpec::now().sec;
-    while (TimeSpec::now().sec - time_old) < 2 {
-    }
 
     static buf2:&[u8] = &[2u8;512];
     unsafe{
@@ -205,19 +177,7 @@ fn nvme_test(){
                 },
             };
         }
-    }
-    
-    // static buf2:&[u8] = &[3u8;512];
-    // unsafe{
-    //     let f3 = nvme_block.async_write_block(2, &buf2);
-
-    // }
-
-    // // static mut read_buf:[u8; 512] = [0u8; 512];
-    // unsafe{
-    //     let f4 = nvme_block.async_read_block(2, &mut read_buf);
-    // }
-    
+    }    
 }
 
 
