@@ -165,9 +165,7 @@ fn nvme_test(){
         let mywaker = Arc::new(wake2);
         let waker = mywaker_into_waker(Arc::into_raw(mywaker));
         let mut cx = Context::from_waker(&waker);
-        use linux_object::time::*;
-        let time_old = TimeSpec::now().sec;
-        while (TimeSpec::now().sec - time_old) < 10 {
+        loop { 
             match Future::poll(f2.as_mut(), &mut cx) {
                 Poll::Ready(()) => {
                     break
@@ -177,6 +175,46 @@ fn nvme_test(){
                 },
             };
         }
+    }    
+
+    static mut read_buf:[u8; 512] = [0u8; 512];
+    unsafe{
+        let mut f3 = nvme_block.async_read_block(0, &mut read_buf);
+        let wake3 =  MyWaker {};
+        let mywaker = Arc::new(wake3);
+        let waker = mywaker_into_waker(Arc::into_raw(mywaker));
+        let mut cx = Context::from_waker(&waker);
+        loop { 
+            match Future::poll(f3.as_mut(), &mut cx) {
+                Poll::Ready(()) => {
+                    break
+                }
+                Poll::Pending => {
+                    
+                },
+            };
+        }
+        info!("read_buf: {:?}", read_buf);
+    }  
+    
+
+    unsafe{
+        let mut f4 = nvme_block.async_read_block(1, &mut read_buf);
+        let wake4 =  MyWaker {};
+        let mywaker = Arc::new(wake4);
+        let waker = mywaker_into_waker(Arc::into_raw(mywaker));
+        let mut cx = Context::from_waker(&waker);
+        loop { 
+            match Future::poll(f4.as_mut(), &mut cx) {
+                Poll::Ready(()) => {
+                    break
+                }
+                Poll::Pending => {
+                    
+                },
+            };
+        }
+        info!("read_buf: {:?}", read_buf);
     }    
 }
 

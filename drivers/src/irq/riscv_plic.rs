@@ -168,7 +168,7 @@ impl Scheme for Plic {
             if inner.manager.handle(irq_num).is_err() {
                 warn!("no registered handler for IRQ {}!", irq_num);
             }
-            error!("riscv plic handle irq: {}", irq_num);
+            // error!("riscv plic handle irq: {}", irq_num);
             inner.eoi(irq_num);
         }
     }
