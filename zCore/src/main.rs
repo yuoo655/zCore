@@ -52,13 +52,11 @@ fn primary_main(config: kernel_hal::KernelConfig) {
     kernel_hal::primary_init();
     STARTED.store(true, Ordering::SeqCst);
 
+    test();
 
-    nvme_test();
-    info!("end");
+    // nvme_test();
 
-    loop{
-        
-    }
+    panic!("end");
 }
 
 #[cfg(not(any(feature = "libos", target_arch = "aarch64")))]
@@ -96,7 +94,33 @@ use core::task::{RawWaker, RawWakerVTable};
 use alloc::sync::Arc;
 use alloc::vec::Vec;
 
+fn test(){
+    use alloc::boxed::Box;
+    let irq = kernel_hal::drivers::all_irq().find("riscv-plic").unwrap();
+    let nvme = kernel_hal::drivers::all_block().find("nvme").unwrap();
+    let irq_num = 33;
+    let _r = irq.register_handler(irq_num, Box::new(move || nvme.handle_irq(irq_num)));
 
+    let _r = irq.unmask(irq_num);
+
+    let nvme_block = kernel_hal::drivers::all_block()
+    .find("nvme")
+    .unwrap();
+
+    let buf1:&[u8] = &[1u8;512];
+    let _r = nvme_block.write_block(0, &buf1);
+    warn!("r {:?}", _r);
+    let mut read_buf = [0u8; 512];
+    let _r = nvme_block.read_block(0, &mut read_buf);
+    warn!("read_buf: {:?}", read_buf);
+
+    let buf2:&[u8] = &[2u8;512];
+    let _r = nvme_block.write_block(1, &buf2);
+    warn!("r {:?}", _r);
+    let mut read_buf = [0u8; 512];
+    let _r = nvme_block.read_block(1, &mut read_buf);
+    warn!("read_buf: {:?}", read_buf);
+}
 
 fn nvme_test(){
     let irq = kernel_hal::drivers::all_irq().find("riscv-plic").unwrap();
@@ -106,19 +130,27 @@ fn nvme_test(){
     let _r = irq.unmask(irq_num);
     let nvme_block = kernel_hal::drivers::all_block().find("nvme").unwrap();
     
-    use linux_object::time::*;
-    let time_old = TimeSpec::now().sec;
-
-    // info!("sleep 5");
+    // use linux_object::time::*;
+    // let time_old = TimeSpec::now().sec;
     // while (TimeSpec::now().sec - time_old) < 5 {
     // }
 
-    irq.clear_irq(0x21);
-    irq.clear_irq(0x21);
-    irq.clear_irq(0x21);
-    irq.clear_irq(0x21);
-    irq.clear_irq(0x21);
-    
+    // info!("sleep 5");
+    // irq.clear_irq(0x9);
+    // irq.clear_irq(0x21);
+    // irq.clear_irq(0x9);
+    // irq.clear_irq(0x21);
+    // irq.clear_irq(0x9);
+    // irq.clear_irq(0x21);
+    // irq.clear_irq(0x9);
+    // irq.clear_irq(0x21);
+    // irq.clear_irq(0x9);
+    // irq.clear_irq(0x21);
+    // irq.clear_irq(0x9);
+    // irq.clear_irq(0x21);
+    // irq.clear_irq(0x9);
+    // irq.clear_irq(0x21);
+    drop(irq);
     static buf1:&[u8] = &[1u8;512];
     unsafe{
         let mut f1 = nvme_block.async_write_block(0, &buf1);
@@ -145,6 +177,15 @@ fn nvme_test(){
             };
         }
     }
+    // irq.clear_irq(0x9);
+    // irq.clear_irq(0x21);
+    // irq.clear_irq(0x1);
+
+    use linux_object::time::*;
+    let time_old = TimeSpec::now().sec;
+    while (TimeSpec::now().sec - time_old) < 2 {
+    }
+
     static buf2:&[u8] = &[2u8;512];
     unsafe{
         let mut f2 = nvme_block.async_write_block(1, &buf2);
@@ -152,12 +193,15 @@ fn nvme_test(){
         let mywaker = Arc::new(wake2);
         let waker = mywaker_into_waker(Arc::into_raw(mywaker));
         let mut cx = Context::from_waker(&waker);
-        loop {
+        use linux_object::time::*;
+        let time_old = TimeSpec::now().sec;
+        while (TimeSpec::now().sec - time_old) < 10 {
             match Future::poll(f2.as_mut(), &mut cx) {
                 Poll::Ready(()) => {
                     break
                 }
                 Poll::Pending => {
+                    
                 },
             };
         }

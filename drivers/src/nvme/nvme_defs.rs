@@ -227,8 +227,24 @@ impl NvmeFeatures{
             rsvd2: [0;2],
             prp1: 0,
             prp2: 0,
-            fid: 0x07,
+            fid: NVME_FEAT_NUM_QUEUES,
             dword11: count,
+            rsvd12: [0;4],
+        }
+    }
+
+
+    pub fn nvme_set_irq_coalesce(time: u32) -> Self{
+        Self{
+            opcode: 0x09,
+            flags: 0,
+            command_id: 3,
+            nsid: 0,
+            rsvd2: [0;2],
+            prp1: 0,
+            prp2: 0,
+            fid: NVME_FEAT_IRQ_COALESCE,
+            dword11: time,
             rsvd12: [0;4],
         }
     }

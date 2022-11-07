@@ -23,7 +23,7 @@ pub struct NvmeInterface {
 
     admin_queue: Arc<Mutex<NvmeQueue<ProviderImpl>>>,
 
-    // io_queues: Vec<Arc<Mutex<NvmeQueue<ProviderImpl>>>>,
+    io_queues: Vec<Arc<Mutex<NvmeQueue<ProviderImpl>>>>,
 
     bar: usize,
 
@@ -34,12 +34,12 @@ impl NvmeInterface {
     pub fn new(bar: usize, irq: usize) -> DeviceResult<NvmeInterface> {
         let admin_queue = Arc::new(Mutex::new(NvmeQueue::new(0, 0)));
 
-        // let io_queues = vec![Arc::new(Mutex::new(NvmeQueue::<ProviderImpl>::new(1, 0x8)))];
+        let io_queues = vec![Arc::new(Mutex::new(NvmeQueue::<ProviderImpl>::new(1, 0x8)))];
 
         let mut interface = NvmeInterface {
             name: String::from("nvme"),
             admin_queue,
-            // io_queues,
+            io_queues,
             bar,
             irq,
         };
@@ -51,6 +51,7 @@ impl NvmeInterface {
 
     // config admin queue ,io queue
     pub fn init(&mut self) {
+
         self.nvme_configure_admin_queue();
 
         self.nvme_alloc_io_queue();
@@ -62,8 +63,16 @@ impl NvmeInterface {
 }
 
 impl NvmeInterface {
-    pub fn submit_sync_command(&mut self, mut cmd: NvmeCommonCommand){        
-        let mut admin_queue = self.admin_queue.as_ref().lock();
+
+
+    pub fn nvme_submit_command(&self, nvmeq: NvmeQueue<ProviderImpl>, cmd: NvmeCommonCommand){
+        let mut nvmeq = nvmeq;
+        
+
+    }
+
+    pub fn submit_sync_command(&mut self, cmd: NvmeCommonCommand){        
+        let mut admin_queue = self.admin_queue.lock();
 
         let dbs = self.bar + NVME_REG_DBS;
 
@@ -86,8 +95,77 @@ impl NvmeInterface {
         }
     }
 
+    pub fn submit_io_command(&mut self, cmd: NvmeCommonCommand){        
+        let binding = self.io_queues[0].clone();
+        let mut io_queue = binding.lock();
+
+        // let mut io_queue = self.io_queues[0].clone().lock();
+        let sq_tail = io_queue.sq_tail;
+        io_queue.sq[sq_tail].write(cmd);
+        drop(io_queue);
+
+        self.nvme_write_sq_db(true);
+    }
+    
+    pub fn nvme_poll_cq(&mut self) {
+        while self.nvme_cqe_pending(){
+            self.nvme_update_cq_head();
+            self.nvme_ring_cq_doorbell();
+        }
+    }
+
+    pub fn nvme_cqe_pending(&self)-> bool{
+        let io_queue = self.io_queues[0].lock();
+        let cq_head = io_queue.cq_head;
+        let cqe = io_queue.cq[cq_head].read();
+        if (cqe.status & 1) == (io_queue.cq_phase as u16) {
+            return true;
+        }else{
+            return false;
+        }
+    }
+
+    pub fn nvme_ring_cq_doorbell(&self) {
+        let io_queue = self.io_queues[0].lock();
+        let cq_head = io_queue.cq_head;
+        let q_db = self.bar + NVME_REG_DBS + io_queue.db_offset;
+        unsafe { write_volatile((q_db + 0x4) as *mut u32, cq_head as u32) }
+    }
+
+    pub fn nvme_write_sq_db(&mut self, write_sq: bool) {
+        let mut io_queue = self.io_queues[0].lock();
+	    if !write_sq {
+            let mut next_tail = io_queue.sq_tail + 1;
+
+	    	if next_tail == io_queue.q_depth{
+	    		next_tail = 0;
+            }
+	    	if next_tail != io_queue.last_sq_tail{
+	    		return;
+            }
+	    }
+        let db = self.bar + NVME_REG_DBS + io_queue.db_offset;
+        unsafe { write_volatile(db as *mut u32, io_queue.sq_tail as u32) }
+        io_queue.last_sq_tail = io_queue.sq_tail;
+    }
+
+    pub fn nvme_update_cq_head(&mut self) {
+        let mut io_queue = self.io_queues[0].lock();
+
+        let next_head = io_queue.cq_head + 1;
+
+        if next_head == io_queue.q_depth{
+            io_queue.cq_head = 0;
+            io_queue.cq_phase ^= 1;
+        }else{
+            io_queue.cq_head = next_head;
+        }
+        
+    }
+
+
     pub fn nvme_configure_admin_queue(&mut self) {
-        let mut admin_queue = self.admin_queue.as_ref().lock();
+        let mut admin_queue = self.admin_queue.lock();
 
         let bar = self.bar;
         let dbs = bar + NVME_REG_DBS;
@@ -140,25 +218,16 @@ impl NvmeInterface {
         admin_queue.sq[0].write(common_cmd);
         admin_queue.sq_tail += 1;
 
-        let admin_q_db = dbs + admin_queue.db_offset;
-        unsafe { write_volatile(admin_q_db as *mut u32, 1) }
+        self.submit_sync_command(common_cmd);
 
-        loop {
-            let status = admin_queue.cq[0].read();
-            if status.status != 0 {
-                // warn!("nvme cq :{:#x?}", status);
-                unsafe { write_volatile((admin_q_db + 0x4) as *mut u32, 1) }
-                break;
-            }
-        }
     }
 
     pub fn nvme_alloc_io_queue(&mut self) {
 
         let bar = self.bar;
-        let sq_dma_pa = self.admin_queue.as_ref().lock().sq_pa as u32;
-        let cq_dma_pa = self.admin_queue.as_ref().lock().cq_pa as u32;
-        let data_dma_pa = self.admin_queue.as_ref().lock().data_pa as u64;
+        let sq_dma_pa = self.io_queues[0].as_ref().lock().sq_pa as u32;
+        let cq_dma_pa = self.io_queues[0].as_ref().lock().cq_pa as u32;
+        let data_dma_pa = self.io_queues[0].as_ref().lock().data_pa as u64;
 
         let dev_dbs = bar + NVME_REG_DBS;
         let admin_q_db = dev_dbs;
@@ -213,8 +282,7 @@ impl NvmeInterface {
         // warn!("read block");
         let db_offset = 0x8;
 
-        let mut admin_queue = self.admin_queue.as_ref().lock();
-        // warn!("got lock");
+        let mut io_queue = self.io_queues[0].lock();
 
         let bar = self.bar;
 
@@ -236,49 +304,21 @@ impl NvmeInterface {
         //transfer to common command
         let common_cmd = unsafe { core::mem::transmute(cmd) };
 
-        let tail = admin_queue.sq_tail;
 
-
-        // write command to sq
-        admin_queue.sq[tail].write(common_cmd);
-        admin_queue.sq_tail += 1;
-
-        drop(admin_queue);
+         self.submit_io_command(common_cmd);
 
         
-        // #[cfg(any(target_arch = "riscv32", target_arch = "riscv64"))]
-        // unsafe{
-        //     use riscv::register::sstatus;
-        //     use riscv::register::sie;
-        //     unsafe {
-        //         sie::clear_sext();
-        //         sstatus::clear_sie();
-        //     }
-        // }
-        info!("write db");
-        // write doorbell register
-        unsafe { write_volatile((dbs + db_offset) as *mut u32, (tail + 1) as u32) }
-        
-        // info!("send read command ");
-
         0x222 as usize
     }
-    fn send_write_command(&self, block_id:usize, write_buf: &[u8]) -> usize{
+    fn send_write_command(&self, block_id:usize, write_buf: &[u8], cid: usize) -> usize{
         warn!("write block");
 
-        let cid = NVME_COMMAND_ID.lock().load(Ordering::SeqCst);
-        NVME_COMMAND_ID.lock().store(cid + 1, Ordering::Relaxed);
-
-        // let io_queue = self.io_queues[0].lock();
         let db_offset = 0x8;
-        let mut admin_queue = self.admin_queue.as_ref().lock();
+        let mut io_queue = self.io_queues[0].lock();
         let bar = self.bar;
         let dbs = bar + NVME_REG_DBS;
         let ptr = write_buf.as_ptr();
         let addr = virt_to_phys(ptr as usize);
-
-
-
         // build nvme write command
         let mut cmd = NvmeRWCommand::new_write_command();
         cmd.nsid = 1;
@@ -286,23 +326,10 @@ impl NvmeInterface {
         cmd.length = 0;
         cmd.command_id = cid as u16;
         cmd.slba = block_id as u64;
-
         // transmute to common command
         let common_cmd = unsafe { core::mem::transmute(cmd) };
 
-        let mut tail = admin_queue.sq_tail;
-        if tail > 1023 {
-            tail = 0;
-        }
-
-        // push command to sq
-        admin_queue.sq[tail].write(common_cmd);
-        admin_queue.sq_tail += 1;
-
-        // write doorbell register
-        unsafe { write_volatile((dbs + db_offset) as *mut u32, (tail + 1) as u32) }
-
-        warn!("send write command cid {:?} tail {:?}", 0x111, tail);
+        self.submit_io_command(common_cmd);
         cid as usize
     }
 
@@ -352,28 +379,9 @@ impl BlockScheme for NvmeInterface {
         //transfer to common command
         let common_cmd = unsafe { core::mem::transmute(cmd) };
 
-        let tail = admin_queue.sq_tail;
+        self.submit_io_command(common_cmd);
 
-        // write command to sq
-        admin_queue.sq[tail].write(common_cmd);
-        admin_queue.sq_tail += 1;
-
-        // write doorbell register
-        unsafe { write_volatile((dbs + db_offset) as *mut u32, (tail + 1) as u32) }
-
-        // wait for command complete
-        loop {
-            let status = admin_queue.cq[tail].read();
-            if status.status != 0 {
-                // warn!("nvme cq :{:#x?}", status);
-
-                // write doorbell
-                unsafe { write_volatile((dbs + db_offset + 0x4) as *mut u32, (tail + 1) as u32) }
-                break;
-            }
-        }
-
-        // admin_queue.cq_head = admin_queue.sq_tail;
+        self.nvme_poll_cq();
 
         Ok(())
     }
@@ -383,13 +391,7 @@ impl BlockScheme for NvmeInterface {
     // SLBA = start logical block address
     // length = 1 = 512B
     fn write_block(&self, block_id: usize, write_buf: &[u8]) -> DeviceResult {
-        // warn!("write block");
-        // let io_queue = self.io_queues[0].lock();
         let db_offset = 0x8;
-        let mut admin_queue = self.admin_queue.as_ref().lock();
-        let bar = self.bar;
-        let dbs = bar + NVME_REG_DBS;
-
         let ptr = write_buf.as_ptr();
 
         let addr = virt_to_phys(ptr as usize);
@@ -405,29 +407,10 @@ impl BlockScheme for NvmeInterface {
         // transmute to common command
         let common_cmd = unsafe { core::mem::transmute(cmd) };
 
-        let mut tail = admin_queue.sq_tail;
-        if tail > 1023 {
-            tail = 0;
-        }
+        self.submit_io_command(common_cmd);
 
-        // push command to sq
-        admin_queue.sq[tail].write(common_cmd);
-        admin_queue.sq_tail += 1;
+        self.nvme_poll_cq();
 
-        // write doorbell register
-        unsafe { write_volatile((dbs + db_offset) as *mut u32, (tail + 1) as u32) }
-
-        // wait for command complete
-        loop {
-            let status = admin_queue.cq[tail].read();
-            if status.status != 0 {
-                // warn!("nvme cq :{:#x?}", status);
-
-                // write doorbell
-                unsafe { write_volatile((dbs + db_offset + 0x4) as *mut u32, (tail + 1) as u32) }
-                break;
-            }
-        }
         Ok(())
     }
 
@@ -445,7 +428,10 @@ impl BlockScheme for NvmeInterface {
 
     async fn async_write_block(&self, block_id: usize, write_buf: &[u8]){
         warn!("async write block");
-        let cid = self.send_write_command(block_id, write_buf);
+        let cid = NVME_COMMAND_ID.lock().load(Ordering::SeqCst);
+        NVME_COMMAND_ID.lock().store(cid + 1, Ordering::Relaxed);
+
+        self.send_write_command(block_id, write_buf, cid);
         let f =  NvmeFuture::new(cid);
         f.await;
     }

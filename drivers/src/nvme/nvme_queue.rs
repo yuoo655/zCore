@@ -25,6 +25,8 @@ pub struct NvmeQueue<P: Provider> {
     pub sq_pa: usize,
     pub cq_pa: usize,
     pub data_pa: usize,
+
+    pub q_depth: usize
 }
 
 impl<P: Provider> NvmeQueue<P> {
@@ -34,11 +36,11 @@ impl<P: Provider> NvmeQueue<P> {
         let (cq_va, cq_pa) = P::alloc_dma(P::PAGE_SIZE * 2);
 
         let submit_queue = unsafe {
-            slice::from_raw_parts_mut(sq_va as *mut Volatile<NvmeCommonCommand>, PAGE_SIZE)
+            slice::from_raw_parts_mut(sq_va as *mut Volatile<NvmeCommonCommand>, PAGE_SIZE*2)
         };
 
         let complete_queue =
-            unsafe { slice::from_raw_parts_mut(cq_va as *mut Volatile<NvmeCompletion>, PAGE_SIZE) };
+            unsafe { slice::from_raw_parts_mut(cq_va as *mut Volatile<NvmeCompletion>, PAGE_SIZE*2) };
 
         NvmeQueue {
             dma_data: PhantomData,
@@ -47,12 +49,13 @@ impl<P: Provider> NvmeQueue<P> {
             db_offset,
             qid,
             cq_head: 0,
-            cq_phase: 0,
+            cq_phase: 1,
             sq_tail: 0,
             last_sq_tail: 0,
             sq_pa,
             cq_pa,
             data_pa,
+            q_depth: 128
         }
     }
 }
