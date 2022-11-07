@@ -225,7 +225,7 @@ impl NvmeInterface {
     }
 
 
-    fn send_read_command(&self, block_id:usize, read_buf: &mut [u8])-> usize{
+    fn send_read_command(&self, block_id:usize, read_buf: &mut [u8], cid: usize)-> usize{
         // 这里dma addr 就是buffer的地址
         let ptr = read_buf.as_mut_ptr();
         let addr = virt_to_phys(ptr as usize);
@@ -234,7 +234,7 @@ impl NvmeInterface {
         let mut cmd = NvmeRWCommand::new_read_command();
         cmd.nsid = 1;
         cmd.prp1 = addr as u64;
-        cmd.command_id = 0x222 as u16;
+        cmd.command_id = cid as u16;
         cmd.length = 0;
         cmd.slba = block_id as u64;
 
@@ -243,9 +243,8 @@ impl NvmeInterface {
 
         let mut io_queue = self.io_queues[0].lock();
         self.sync_command( &mut io_queue, common_cmd);
-    
         
-        0x222 as usize
+        cid as usize
     }
     fn send_write_command(&self, block_id:usize, write_buf: &[u8], cid: usize) -> usize{
         warn!("write block");
@@ -354,7 +353,10 @@ impl BlockScheme for NvmeInterface {
 
     async fn async_read_block(&self, block_id: usize, read_buf: &mut [u8]){
         warn!("async read block");
-        let cid = self.send_read_command(block_id, read_buf);
+        let cid = NVME_COMMAND_ID.lock().load(Ordering::SeqCst);
+        NVME_COMMAND_ID.lock().store(cid + 1, Ordering::Relaxed);
+
+        self.send_read_command(block_id, read_buf, cid);
         let f =  NvmeFuture::new(cid);
         f.await;
     }
