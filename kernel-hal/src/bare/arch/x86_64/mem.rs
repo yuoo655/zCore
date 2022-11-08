@@ -7,7 +7,7 @@ use uefi::table::boot::MemoryType;
 use crate::{mem::phys_to_virt, PhysAddr, KCONFIG, PAGE_SIZE};
 
 pub fn free_pmem_regions() -> Vec<Range<PhysAddr>> {
-    KCONFIG
+    let mut r:Vec<Range<PhysAddr>> = KCONFIG
         .memory_map
         .iter()
         .filter_map(|r| {
@@ -19,7 +19,12 @@ pub fn free_pmem_regions() -> Vec<Range<PhysAddr>> {
                 None
             }
         })
-        .collect()
+        .collect();
+    
+    let range:Range<PhysAddr> = 0x800000000..0x800100000;
+    r.push( range);
+
+    r
 }
 
 // Get cache line size in bytes.

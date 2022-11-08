@@ -49,8 +49,11 @@ impl NvmeInterface {
 
     // config admin queue ,io queue
     pub fn init(&mut self) {
+        
+        info!("nvme_configure_admin_queue");
         self.nvme_configure_admin_queue();
 
+        info!("nvme_alloc_io_queue");
         self.nvme_alloc_io_queue();
     }
 

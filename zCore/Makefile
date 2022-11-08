@@ -160,7 +160,7 @@ ifeq ($(ARCH), x86_64)
   qemu_opts += \
 		-machine q35 \
 		-cpu Haswell,+smap,-check,-fsgsbase \
-		-m 1G \
+		-m 8G \
 		-serial mon:stdio \
 		-serial file:/tmp/serial.out \
 		-drive format=raw,if=pflash,readonly=on,file=$(ovmf) \
@@ -193,7 +193,9 @@ endif
 qemu_opts += \
 	-netdev user,id=net1,hostfwd=tcp::8000-:80,hostfwd=tcp::2222-:2222,hostfwd=udp::6969-:6969 \
 	-device e1000e,netdev=net1
-	# -netdev tap,id=net1,script=ifup.sh,downscript=ifdown.sh
+# qemu_opts += \
+# 	-drive file=nvme.img,if=none,id=nvm -device nvme,serial=deadbeef,drive=nvm 
+# 	# -netdev tap,id=net1,script=ifup.sh,downscript=ifdown.sh
 
 ifeq ($(DISK), on)
   ifeq ($(ARCH), x86_64)

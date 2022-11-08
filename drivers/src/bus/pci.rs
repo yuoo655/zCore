@@ -119,38 +119,38 @@ unsafe fn enable(loc: Location, paddr: u64) -> Option<usize> {
     let mut cap_ptr = am.read8(ops, loc, PCI_CAP_PTR) as u16;
     let mut assigned_irq = None;
 
-    while cap_ptr > 0 {
-        let cap_id = am.read8(ops, loc, cap_ptr);
-        if cap_id == PCI_CAP_ID_MSI {
-            let orig_ctrl = am.read32(ops, loc, cap_ptr + PCI_MSI_CTRL_CAP);
-            // The manual Volume 3 Chapter 10.11 Message Signalled Interrupts
-            // 0 is (usually) the apic id of the bsp.
-            //am.write32(ops, loc, cap_ptr + PCI_MSI_ADDR, 0xfee00000 | (0 << 12));
-            am.write32(ops, loc, cap_ptr + PCI_MSI_ADDR, 0xfee00000);
-            MSI_IRQ += 1;
-            let irq = MSI_IRQ;
-            assigned_irq = Some(irq as usize);
-            // we offset all our irq numbers by 32
-            if (orig_ctrl >> 16) & (1 << 7) != 0 {
-                // 64bit
-                am.write32(ops, loc, cap_ptr + PCI_MSI_DATA_64, irq + 32);
-            } else {
-                // 32bit
-                am.write32(ops, loc, cap_ptr + PCI_MSI_DATA_32, irq + 32);
-            }
+    // while cap_ptr > 0 {
+    //     let cap_id = am.read8(ops, loc, cap_ptr);
+    //     if cap_id == PCI_CAP_ID_MSI {
+    //         let orig_ctrl = am.read32(ops, loc, cap_ptr + PCI_MSI_CTRL_CAP);
+    //         // The manual Volume 3 Chapter 10.11 Message Signalled Interrupts
+    //         // 0 is (usually) the apic id of the bsp.
+    //         //am.write32(ops, loc, cap_ptr + PCI_MSI_ADDR, 0xfee00000 | (0 << 12));
+    //         am.write32(ops, loc, cap_ptr + PCI_MSI_ADDR, 0xfee00000);
+    //         MSI_IRQ += 1;
+    //         let irq = MSI_IRQ;
+    //         assigned_irq = Some(irq as usize);
+    //         // we offset all our irq numbers by 32
+    //         if (orig_ctrl >> 16) & (1 << 7) != 0 {
+    //             // 64bit
+    //             am.write32(ops, loc, cap_ptr + PCI_MSI_DATA_64, irq + 32);
+    //         } else {
+    //             // 32bit
+    //             am.write32(ops, loc, cap_ptr + PCI_MSI_DATA_32, irq + 32);
+    //         }
 
-            // enable MSI interrupt, assuming 64bit for now
-            am.write32(ops, loc, cap_ptr + PCI_MSI_CTRL_CAP, orig_ctrl | 0x10000);
-            warn!(
-                "MSI control {:#b}, enabling MSI interrupt {}",
-                orig_ctrl >> 16,
-                irq
-            );
-            msi_found = true;
-        }
-        warn!("PCI device has cap id {} at {:#X}", cap_id, cap_ptr);
-        cap_ptr = am.read8(ops, loc, cap_ptr + 1) as u16;
-    }
+    //         // enable MSI interrupt, assuming 64bit for now
+    //         am.write32(ops, loc, cap_ptr + PCI_MSI_CTRL_CAP, orig_ctrl | 0x10000);
+    //         warn!(
+    //             "MSI control {:#b}, enabling MSI interrupt {}",
+    //             orig_ctrl >> 16,
+    //             irq
+    //         );
+    //         msi_found = true;
+    //     }
+    //     warn!("PCI device has cap id {} at {:#X}", cap_id, cap_ptr);
+    //     cap_ptr = am.read8(ops, loc, cap_ptr + 1) as u16;
+    // }
 
     if !msi_found {
 
@@ -181,6 +181,7 @@ pub fn init_driver(dev: &PCIDevice, mapper: &Option<Arc<dyn IoMapper>>) -> Devic
                 }
                 let irq = unsafe { enable(dev.loc, addr) };
                 let vaddr = phys_to_virt(addr as usize);
+                info!("vaddr {:#x?} paddr {:#x?}", vaddr, addr);
                 let dev = Device::Net(Arc::new(crate::net::e1000::init(
                     name,
                     irq.unwrap_or(0),
@@ -194,16 +195,22 @@ pub fn init_driver(dev: &PCIDevice, mapper: &Option<Arc<dyn IoMapper>>) -> Devic
 
         (0x1b36, 0x10) => {
             if let Some(BAR::Memory(addr, _len, _, _)) = dev.bars[0] {
-                #[cfg(target_arch = "riscv64")]
-                let addr = if addr == 0 { E1000_BASE as u64 } else { addr };
+                info!("addr {:#x}", addr);
+                // #[cfg(target_arch = "riscv64")]
+                // let addr = if addr == 0 { E1000_BASE as u64 } else { addr };
 
                 if let Some(m) = mapper {
                     m.query_or_map(addr as usize, PAGE_SIZE * 8);
                 }
 
+
                 let irq = unsafe { enable(dev.loc, addr) };
                 let vaddr = phys_to_virt(addr as usize);
 
+                // loop{
+
+                // }
+                info!("vaddr {:#x?} paddr {:#x?}", vaddr, addr);
                 let blk = Arc::new(crate::nvme::NvmeInterface::new(vaddr, irq.unwrap_or(33))?);
 
                 let dev = Device::Block(blk);

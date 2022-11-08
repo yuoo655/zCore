@@ -45,6 +45,8 @@ fn primary_main(config: kernel_hal::KernelConfig) {
     logging::set_max_level(&options.log_level);
     info!("Boot options: {:#?}", options);
     memory::insert_regions(&kernel_hal::mem::free_pmem_regions());
+
+    // memory::insert_regions(&Range<PhysAddr>);
     kernel_hal::primary_init();
     STARTED.store(true, Ordering::SeqCst);
 

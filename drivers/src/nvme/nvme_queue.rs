@@ -33,9 +33,9 @@ pub struct NvmeQueue<P: Provider> {
 
 impl<P: Provider> NvmeQueue<P> {
     pub fn new(qid: usize, db_offset: usize) -> Self {
-        let (data_va, data_pa) = P::alloc_dma(P::PAGE_SIZE * 2);
-        let (sq_va, sq_pa) = P::alloc_dma(P::PAGE_SIZE * 2);
-        let (cq_va, cq_pa) = P::alloc_dma(P::PAGE_SIZE * 2);
+        let (data_va, data_pa) = P::alloc_dma(P::PAGE_SIZE );
+        let (sq_va, sq_pa) = P::alloc_dma(P::PAGE_SIZE );
+        let (cq_va, cq_pa) = P::alloc_dma(P::PAGE_SIZE);
 
         trace!("data_va: {:x}, data_pa: {:x}", data_va, data_pa);
 

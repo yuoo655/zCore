@@ -177,6 +177,7 @@ impl<M: IoMapper> DevicetreeDriverBuilder<M> {
     }
 
     fn mmap(&self, phys_addr: PhysAddr, len: usize) -> DeviceResult<VirtAddr> {
+        info!("mmap {:#x} to {:#x}", phys_addr, len);
         self.io_mapper
             .query_or_map(phys_addr, len)
             .ok_or(DeviceError::NoResources)
