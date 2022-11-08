@@ -165,6 +165,8 @@ ifeq ($(ARCH), x86_64)
 		-serial file:/tmp/serial.out \
 		-drive format=raw,if=pflash,readonly=on,file=$(ovmf) \
 		-drive format=raw,file=fat:rw:$(esp) \
+		-drive file=nvme.img,if=none,id=nvm \
+        -device nvme,serial=deadbeef,drive=nvm \
 		-nic none
 else ifeq ($(ARCH), riscv64)
   qemu_opts += \

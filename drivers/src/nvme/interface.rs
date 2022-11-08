@@ -207,8 +207,6 @@ impl NvmeInterface {
         self.submit_sync_command(common_cmd);
 
 
-
-
         //nvme create sq
         let mut cmd = NvmeCommonCommand::new();
         cmd.opcode = 0x01;
@@ -321,7 +319,7 @@ impl BlockScheme for NvmeInterface {
     // prp1 = write_buf physical address
     // prp2 = 0
     // SLBA = start logical block address
-    // length = 1 = 512B
+    // length = 0 = 512B
     fn write_block(&self, block_id: usize, write_buf: &[u8]) -> DeviceResult {
         let db_offset = 0x8;
         let ptr = write_buf.as_ptr();
@@ -526,3 +524,27 @@ impl NvmeInterface{
         }
     }
 }
+
+
+// // ...
+
+// GetWakerFuture;
+
+// target = Waker
+
+// fn poll(self, cx) {
+//     Poll::Ready(cx.waker().clone()))
+// }
+
+// async {
+
+//     ccc.await
+//     bb().await
+
+// }
+
+// bb(0 {
+
+
+//     .await
+// })

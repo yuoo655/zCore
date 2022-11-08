@@ -111,6 +111,8 @@ extern "C" {
     fn drivers_timer_now_as_micros() -> u64;
 }
 
+//trait 
+
 pub const PAGE_SIZE: usize = 4096;
 
 type VirtAddr = usize;

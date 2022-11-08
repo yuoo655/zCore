@@ -131,7 +131,7 @@ fn nvme_test(){
     let nvme_block = kernel_hal::drivers::all_block().find("nvme").unwrap();
 
     drop(irq);
-    static buf1:&[u8] = &[1u8;512];
+    let buf1:&[u8] = &[1u8;512];
     unsafe{
         let mut f1 = nvme_block.async_write_block(0, &buf1);
         let wake1 =  MyWaker {};
@@ -158,7 +158,7 @@ fn nvme_test(){
         }
     }
 
-    static buf2:&[u8] = &[2u8;512];
+    let buf2:&[u8] = &[2u8;512];
     unsafe{
         let mut f2 = nvme_block.async_write_block(1, &buf2);
         let wake2 =  MyWaker {};
@@ -177,7 +177,7 @@ fn nvme_test(){
         }
     }    
 
-    static mut read_buf:[u8; 512] = [0u8; 512];
+    let mut read_buf:[u8; 512] = [0u8; 512];
     unsafe{
         let mut f3 = nvme_block.async_read_block(0, &mut read_buf);
         let wake3 =  MyWaker {};
@@ -194,8 +194,8 @@ fn nvme_test(){
                 },
             };
         }
-        info!("read_buf: {:?}", read_buf);
     }  
+
     
 
     unsafe{
@@ -214,7 +214,7 @@ fn nvme_test(){
                 },
             };
         }
-        info!("read_buf: {:?}", read_buf);
+
     }    
 }
 

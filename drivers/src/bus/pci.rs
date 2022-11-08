@@ -194,8 +194,8 @@ pub fn init_driver(dev: &PCIDevice, mapper: &Option<Arc<dyn IoMapper>>) -> Devic
 
         (0x1b36, 0x10) => {
             if let Some(BAR::Memory(addr, _len, _, _)) = dev.bars[0] {
-                #[cfg(target_arch = "riscv64")]
-                let addr = if addr == 0 { E1000_BASE as u64 } else { addr };
+                // #[cfg(target_arch = "riscv64")]
+                let addr = if addr == 0 { 0x40000000 as u64 } else { addr };
 
                 if let Some(m) = mapper {
                     m.query_or_map(addr as usize, PAGE_SIZE * 8);

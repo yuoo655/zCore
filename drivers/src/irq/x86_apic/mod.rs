@@ -93,6 +93,11 @@ impl Scheme for Apic {
 }
 
 impl IrqScheme for Apic {
+
+    fn clear_irq(&self, irq_num: usize) {
+        
+    }
+
     fn is_valid_irq(&self, gsi: usize) -> bool {
         self.ioapic_list.find(gsi as _).is_some()
     }
