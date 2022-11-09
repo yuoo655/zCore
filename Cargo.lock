@@ -1128,11 +1128,11 @@ dependencies = [
  "lock",
  "log",
  "numeric-enum-macro",
- "rcore-fs",
+ "rcore-fs 0.1.0",
  "rcore-fs-devfs",
  "rcore-fs-mountfs",
- "rcore-fs-ramfs",
- "rcore-fs-sfs",
+ "rcore-fs-ramfs 0.1.0",
+ "rcore-fs-sfs 0.1.0",
  "smoltcp",
  "xmas-elf 0.7.0",
  "zcore-drivers",
@@ -1153,7 +1153,7 @@ dependencies = [
  "lock",
  "log",
  "numeric-enum-macro",
- "rcore-fs",
+ "rcore-fs 0.1.0",
  "static_assertions",
  "zircon-object",
 ]
@@ -1563,6 +1563,17 @@ dependencies = [
 [[package]]
 name = "rcore-fs"
 version = "0.1.0"
+dependencies = [
+ "filetime",
+ "libc",
+ "spin 0.9.4",
+ "tempfile",
+ "winapi",
+]
+
+[[package]]
+name = "rcore-fs"
+version = "0.1.0"
 source = "git+https://github.com/rcore-os/rcore-fs?rev=1a3246b#1a3246b1d3754f414817d72a6217fc7b6076ff30"
 dependencies = [
  "filetime",
@@ -1574,9 +1585,8 @@ dependencies = [
 [[package]]
 name = "rcore-fs-devfs"
 version = "0.1.0"
-source = "git+https://github.com/rcore-os/rcore-fs?rev=1a3246b#1a3246b1d3754f414817d72a6217fc7b6076ff30"
 dependencies = [
- "rcore-fs",
+ "rcore-fs 0.1.0",
  "spin 0.9.4",
 ]
 
@@ -1589,10 +1599,10 @@ dependencies = [
  "git-version",
  "libc",
  "log",
- "rcore-fs",
- "rcore-fs-ramfs",
+ "rcore-fs 0.1.0 (git+https://github.com/rcore-os/rcore-fs?rev=1a3246b)",
+ "rcore-fs-ramfs 0.1.0 (git+https://github.com/rcore-os/rcore-fs?rev=1a3246b)",
  "rcore-fs-sefs",
- "rcore-fs-sfs",
+ "rcore-fs-sfs 0.1.0 (git+https://github.com/rcore-os/rcore-fs?rev=1a3246b)",
  "structopt",
  "time 0.3.15",
 ]
@@ -1604,17 +1614,26 @@ source = "git+https://github.com/rcore-os/rcore-fs?rev=1a3246b#1a3246b1d3754f414
 dependencies = [
  "log",
  "nix",
- "rcore-fs",
+ "rcore-fs 0.1.0 (git+https://github.com/rcore-os/rcore-fs?rev=1a3246b)",
 ]
 
 [[package]]
 name = "rcore-fs-mountfs"
 version = "0.1.0"
-source = "git+https://github.com/rcore-os/rcore-fs?rev=1a3246b#1a3246b1d3754f414817d72a6217fc7b6076ff30"
 dependencies = [
  "lazy_static",
  "log",
- "rcore-fs",
+ "rcore-fs 0.1.0",
+ "rcore-fs-ramfs 0.1.0",
+ "spin 0.9.4",
+]
+
+[[package]]
+name = "rcore-fs-ramfs"
+version = "0.1.0"
+dependencies = [
+ "log",
+ "rcore-fs 0.1.0",
  "spin 0.9.4",
 ]
 
@@ -1624,7 +1643,7 @@ version = "0.1.0"
 source = "git+https://github.com/rcore-os/rcore-fs?rev=1a3246b#1a3246b1d3754f414817d72a6217fc7b6076ff30"
 dependencies = [
  "log",
- "rcore-fs",
+ "rcore-fs 0.1.0 (git+https://github.com/rcore-os/rcore-fs?rev=1a3246b)",
  "spin 0.9.4",
 ]
 
@@ -1635,9 +1654,21 @@ source = "git+https://github.com/rcore-os/rcore-fs?rev=1a3246b#1a3246b1d3754f414
 dependencies = [
  "bitvec",
  "log",
- "rcore-fs",
+ "rcore-fs 0.1.0 (git+https://github.com/rcore-os/rcore-fs?rev=1a3246b)",
  "spin 0.9.4",
  "static_assertions",
+]
+
+[[package]]
+name = "rcore-fs-sfs"
+version = "0.1.0"
+dependencies = [
+ "bitvec",
+ "log",
+ "rcore-fs 0.1.0",
+ "spin 0.9.4",
+ "static_assertions",
+ "tempfile",
 ]
 
 [[package]]
@@ -1647,7 +1678,7 @@ source = "git+https://github.com/rcore-os/rcore-fs?rev=1a3246b#1a3246b1d3754f414
 dependencies = [
  "bitvec",
  "log",
- "rcore-fs",
+ "rcore-fs 0.1.0 (git+https://github.com/rcore-os/rcore-fs?rev=1a3246b)",
  "spin 0.9.4",
  "static_assertions",
 ]
@@ -2540,9 +2571,9 @@ dependencies = [
  "once_cell",
  "os-xtask-utils",
  "rand",
- "rcore-fs",
+ "rcore-fs 0.1.0",
  "rcore-fs-fuse",
- "rcore-fs-sfs",
+ "rcore-fs-sfs 0.1.0 (git+https://github.com/rcore-os/rcore-fs?rev=1a3246b)",
  "shadow-rs",
  "z-config",
 ]
@@ -2577,9 +2608,9 @@ dependencies = [
  "r0",
  "rayboot",
  "rboot",
- "rcore-fs",
+ "rcore-fs 0.1.0",
  "rcore-fs-hostfs",
- "rcore-fs-sfs",
+ "rcore-fs-sfs 0.1.0",
  "riscv 0.9.0",
  "sbi-rt",
  "spin 0.9.4",

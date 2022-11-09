@@ -54,14 +54,14 @@ impl BlockDevice for Block {
     const BLOCK_SIZE_LOG2: u8 = 9; // 512
 
     fn read_at(&self, block_id: usize, buf: &mut [u8]) -> Result<()> {
-        self.0.read_block(block_id, buf).map_err(|_| DevError)
+        self.0.read_block(block_id, buf).map_err(|_| DevError::Other)
     }
 
     fn write_at(&self, block_id: usize, buf: &[u8]) -> Result<()> {
-        self.0.write_block(block_id, buf).map_err(|_| DevError)
+        self.0.write_block(block_id, buf).map_err(|_| DevError::Other)
     }
 
     fn sync(&self) -> Result<()> {
-        self.0.flush().map_err(|_| DevError)
+        self.0.flush().map_err(|_| DevError::Other)
     }
 }

@@ -14,7 +14,7 @@ dircpy = "0.3"
 rand = "0.8"
 once_cell = "1.15.0"
 num_cpus = "1"
-rcore-fs = { git = "https://github.com/rcore-os/rcore-fs", rev = "1a3246b" }
+rcore-fs = { path = "../rcore-fs/rcore-fs", optional = true }
 rcore-fs-sfs = { git = "https://github.com/rcore-os/rcore-fs", rev = "1a3246b" }
 rcore-fs-fuse = { git = "https://github.com/rcore-os/rcore-fs", rev = "1a3246b" }
 os-xtask-utils = "0.0.0"
