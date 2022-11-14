@@ -296,7 +296,7 @@ impl BlockScheme for NvmeInterface {
     // linux中对应实现 nvme_pci_setup_prps
 
     // SLBA = start logical block address
-    // length = 1 = 512B
+    // length = 0 = 512B
     // 1 SLBA = 512B
     fn read_block(&self, block_id: usize, read_buf: &mut [u8]) -> DeviceResult {
         let io_queue = self.io_queues[0].lock();
@@ -316,8 +316,8 @@ impl BlockScheme for NvmeInterface {
         let mut cmd = NvmeRWCommand::new_read_command();
         cmd.nsid = 1;
         cmd.prp1 = addr as u64;
-        cmd.command_id = 101;
-        cmd.length = 1;
+        cmd.command_id = 112;
+        cmd.length = 0;
         cmd.control = 0x8000;
         cmd.dsmgmt = 0x7;
         cmd.slba = block_id as u64;
@@ -370,7 +370,7 @@ impl BlockScheme for NvmeInterface {
         let mut cmd = NvmeRWCommand::new_write_command();
         cmd.nsid = 1;
         cmd.prp1 = addr as u64;
-        cmd.length = 1;
+        cmd.length = 0;
         cmd.command_id = 100;
         cmd.slba = block_id as u64;
         cmd.control = 0;
