@@ -275,22 +275,22 @@ pub fn init_driver(dev: &PCIDevice, mapper: &Option<Arc<dyn IoMapper>>) -> Devic
         //     }
         // }
 
-        (0x1cc1, 0x21) => {
-            if let Some(BAR::Memory(addr, _len, _, _)) = dev.bars[0] {
-            info!(
-                "Found Mass storage controller  addr: {:#x?}",
-                addr
-            );
-            if let Some(m) = mapper {
-                m.query_or_map(addr as usize, PAGE_SIZE * 8);
-            }
-            let irq = unsafe { enable(dev.loc, addr) };
-            let vaddr = phys_to_virt(addr as usize);
-            let blk = Arc::new(crate::nvme::NvmeInterface::new(vaddr, irq.unwrap_or(33))?);
-            let dev = Device::Block(blk);
-            return Ok(dev);
-            }
-        }
+        // (0x1cc1, 0x21) => {
+        //     if let Some(BAR::Memory(addr, _len, _, _)) = dev.bars[0] {
+        //     info!(
+        //         "Found Mass storage controller  addr: {:#x?}",
+        //         addr
+        //     );
+        //     if let Some(m) = mapper {
+        //         m.query_or_map(addr as usize, PAGE_SIZE * 8);
+        //     }
+        //     let irq = unsafe { enable(dev.loc, addr) };
+        //     let vaddr = phys_to_virt(addr as usize);
+        //     let blk = Arc::new(crate::nvme::NvmeInterface::new(vaddr, irq.unwrap_or(33))?);
+        //     let dev = Device::Block(blk);
+        //     return Ok(dev);
+        //     }
+        // }
         (0x144d, 0xa808) => {
             if let Some(BAR::Memory(addr, _len, _, _)) = dev.bars[0] {
                 info!(
