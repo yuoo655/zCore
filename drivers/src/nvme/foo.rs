@@ -30,7 +30,7 @@ impl DmaAllocator for DmaProvider{
 
     fn dma_alloc(size: usize) -> usize{
         let paddr = unsafe { drivers_dma_alloc(size / PAGE_SIZE) };
-        paddr
+        unsafe { drivers_phys_to_virt(paddr) }
     }
 
     fn dma_dealloc(vaddr: usize, size: usize) -> usize {
