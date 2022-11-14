@@ -28,6 +28,7 @@ numeric-enum-macro = "0.2"
 device_tree = { git = "https://github.com/rcore-os/device_tree-rs", rev = "2f2e55f" }
 bitmap-allocator = { git = "https://github.com/rcore-os/bitmap-allocator", rev = "88e871a5" }
 pci = { git = "https://github.com/elliott10/pci-rs", rev = "8f33774b" }
+nvme_driver = {git = "https://github.com/yuoo655/nvme_driver.git", "rev" = "4a877269"}
 virtio-drivers = { git = "https://github.com/rcore-os/virtio-drivers", rev = "2aaf7d6", optional = true }
 rcore-console = { git = "https://github.com/rcore-os/rcore-console", default-features = false, rev = "ca5b1bc", optional = true }
 lock = { git = "https://github.com/DeathWish5/kernel-sync", rev = "8486b8" }
