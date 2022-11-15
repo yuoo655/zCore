@@ -52,9 +52,9 @@ fn primary_main(config: kernel_hal::KernelConfig) {
     kernel_hal::primary_init();
     STARTED.store(true, Ordering::SeqCst);
 
-    // test();
+    test1();
 
-    nvme_test();
+    // nvme_test();
 
     panic!("end");
 }
@@ -120,6 +120,42 @@ fn test(){
     let mut read_buf = [0u8; 512];
     let _r = nvme_block.read_block(1, &mut read_buf);
     warn!("read_buf: {:?}", read_buf);
+}
+
+fn test1(){
+    use alloc::boxed::Box;
+    let irq = kernel_hal::drivers::all_irq().find("riscv-plic").unwrap();
+    let nvme = kernel_hal::drivers::all_block().find("nvme").unwrap();
+    let irq_num = 33;
+    let _r = irq.register_handler(irq_num, Box::new(move || nvme.handle_irq(irq_num)));
+
+    let _r = irq.unmask(irq_num);
+
+    let nvme_block = kernel_hal::drivers::all_block()
+    .find("nvme")
+    .unwrap();
+    let mut buf0 = [0u8; 512];
+    let mut buf1 = [0u8; 512];
+    let mut buf2 = [0u8; 512];
+
+    nvme_block.read_block(0x1, &mut buf0).unwrap();
+    let random = 0x5 as u8;
+    for c in buf2.iter_mut() {
+        *c = random;
+    }
+
+    nvme_block.write_block(0x2, &buf2).unwrap();
+    nvme_block.read_block(0x1, &mut buf1).unwrap();
+    assert_eq!(buf0, buf1);
+
+    nvme_block.read_block(0x2, &mut buf0).unwrap();
+    for c in buf0.iter() {
+        let (a, b, r) = (*c, *c, random);
+        // assert_eq!(*c, random);
+        if a != r || b != r {
+            info!("{} {} {} {}", a, b, r, *c);
+        }
+    }
 }
 
 fn nvme_test(){
